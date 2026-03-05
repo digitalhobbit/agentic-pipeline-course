@@ -1,0 +1,14 @@
+[project]
+name = "idea-pipeline"
+version = "0.1.0"
+description = "Agentic AI pipeline that transforms news articles into startup idea newsletters"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = []
+
+[project.scripts]
+idea-pipeline = "idea_pipeline.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
