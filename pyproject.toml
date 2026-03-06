@@ -6,6 +6,7 @@ readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
     "alembic>=1.18.4",
+    "eventregistry>=9.1",
     "pydantic-settings>=2.13.1",
     "sqlmodel>=0.0.37",
 ]
