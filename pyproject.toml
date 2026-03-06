@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Agentic AI pipeline that transforms news articles into startup idea newsletters"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "alembic>=1.18.4",
+    "pydantic-settings>=2.13.1",
+    "sqlmodel>=0.0.37",
+]
 
 [project.scripts]
 idea-pipeline = "idea_pipeline.cli:main"
@@ -12,3 +16,8 @@ idea-pipeline = "idea_pipeline.cli:main"
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]

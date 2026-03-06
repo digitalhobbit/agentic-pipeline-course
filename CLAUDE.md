@@ -72,6 +72,15 @@ uv run pytest
 
 # Run tests with verbose output
 uv run pytest -v
+
+# Apply database migrations
+uv run alembic upgrade head
+
+# Create a new migration after model changes
+uv run alembic revision --autogenerate -m "description"
+
+# Check current migration status
+uv run alembic current
 ```
 
 The CLI is defined in `pyproject.toml` under `[project.scripts]`:
