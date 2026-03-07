@@ -3,8 +3,12 @@ from datetime import datetime, timezone
 
 from sqlmodel import select
 
-from idea_pipeline.core.models import Article, Run, RunStatus
-from idea_pipeline.db.repositories import ArticleRepository, RunRepository
+from idea_pipeline.core.models import Article, Run, RunStatus, TriageDecision
+from idea_pipeline.db.repositories import (
+    ArticleRepository,
+    RunRepository,
+    TriageDecisionRepository,
+)
 
 
 class TestRunRepository:
@@ -133,3 +137,90 @@ class TestArticleRepository:
         assert count == 1
         stored = session.exec(select(Article)).all()
         assert len(stored) == 2
+
+    def test_get_articles_pending_triage_returns_untriaged(self, session):
+        run = RunRepository(session).create()
+        repo = ArticleRepository(session)
+
+        articles = [
+            _make_article(news_service_article_key="a1"),
+            _make_article(news_service_article_key="a2"),
+            _make_article(news_service_article_key="a3"),
+        ]
+        repo.upsert_many(articles, run.id)
+        stored = session.exec(select(Article)).all()
+
+        # Triage one article
+        decision = TriageDecision(
+            article_id=stored[0].id, keep=True, reason="relevant", run_id=run.id
+        )
+        TriageDecisionRepository(session).create_many([decision])
+
+        pending = repo.get_articles_pending_triage()
+        assert len(pending) == 2
+        pending_ids = {a.id for a in pending}
+        assert stored[0].id not in pending_ids
+
+    def test_get_articles_pending_triage_empty_when_all_triaged(self, session):
+        run = RunRepository(session).create()
+        repo = ArticleRepository(session)
+
+        repo.upsert_many([_make_article(news_service_article_key="a1")], run.id)
+        stored = session.exec(select(Article)).all()
+
+        decision = TriageDecision(
+            article_id=stored[0].id, keep=False, reason="not relevant", run_id=run.id
+        )
+        TriageDecisionRepository(session).create_many([decision])
+
+        assert repo.get_articles_pending_triage() == []
+
+    def test_get_articles_pending_triage_returns_all_runs(self, session):
+        run_repo = RunRepository(session)
+        run1 = run_repo.create()
+        run2 = run_repo.create()
+        repo = ArticleRepository(session)
+
+        repo.upsert_many([_make_article(news_service_article_key="r1")], run1.id)
+        repo.upsert_many([_make_article(news_service_article_key="r2")], run2.id)
+
+        # Returns articles from all runs
+        pending = repo.get_articles_pending_triage()
+        assert len(pending) == 2
+        assert {a.news_service_article_key for a in pending} == {"r1", "r2"}
+
+
+class TestTriageDecisionRepository:
+    def test_create_many(self, session):
+        run = RunRepository(session).create()
+        article_repo = ArticleRepository(session)
+        article_repo.upsert_many(
+            [
+                _make_article(news_service_article_key="t1"),
+                _make_article(news_service_article_key="t2"),
+            ],
+            run.id,
+        )
+        articles = session.exec(select(Article)).all()
+
+        decisions = [
+            TriageDecision(
+                article_id=articles[0].id, keep=True, reason="relevant", run_id=run.id
+            ),
+            TriageDecision(
+                article_id=articles[1].id,
+                keep=False,
+                reason="not relevant",
+                run_id=run.id,
+            ),
+        ]
+
+        triage_repo = TriageDecisionRepository(session)
+        result = triage_repo.create_many(decisions)
+
+        assert len(result) == 2
+        assert all(isinstance(d.id, uuid.UUID) for d in result)
+        assert all(d.run_id == run.id for d in result)
+        assert all(d.created_at is not None for d in result)
+        assert result[0].keep is True
+        assert result[1].keep is False

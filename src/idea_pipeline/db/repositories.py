@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy.dialects.sqlite import insert
 from sqlmodel import Session, select
 
-from idea_pipeline.core.models import Article, Run, RunStatus
+from idea_pipeline.core.models import Article, Run, RunStatus, TriageDecision
 
 
 class RunRepository:
@@ -60,3 +60,24 @@ class ArticleRepository:
         result = self.session.execute(stmt)
         self.session.commit()
         return result.rowcount
+
+    def get_articles_pending_triage(self) -> list[Article]:
+        stmt = select(Article).where(
+            Article.id.notin_(  # type: ignore[union-attr]
+                select(TriageDecision.article_id)
+            )
+        )
+        return list(self.session.exec(stmt).all())
+
+
+class TriageDecisionRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def create_many(self, decisions: list[TriageDecision]) -> list[TriageDecision]:
+        for decision in decisions:
+            self.session.add(decision)
+        self.session.commit()
+        for decision in decisions:
+            self.session.refresh(decision)
+        return decisions

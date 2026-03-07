@@ -84,3 +84,33 @@ class Article(ArticleBase, table=True):
         foreign_key="runs.id",
         description="ID of the pipeline run that fetched this article",
     )
+
+
+class TriageDecisionBase(SQLModel):
+    article_id: uuid.UUID = Field(
+        description="ID of the article this triage decision applies to",
+    )
+    keep: bool = Field(
+        description="Whether the article should be kept for further processing",
+    )
+    reason: str = Field(
+        description="Explanation of why the article was kept or discarded",
+    )
+
+
+class TriageDecision(TriageDecisionBase, table=True):
+    __tablename__ = "triage_decisions"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the triage decision",
+    )
+    run_id: uuid.UUID = Field(
+        foreign_key="runs.id",
+        description="ID of the pipeline run that made this decision",
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the decision was made",
+    )
