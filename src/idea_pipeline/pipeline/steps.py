@@ -38,6 +38,7 @@ class FetchStep(PipelineStep):
             results = response.get("articles", {}).get("results", [])
             if not results:
                 break
+            self.log(f"Page {page}: {len(results)} articles")
 
             for raw in results:
                 article = Article(
@@ -116,10 +117,16 @@ referencing articles by their index number.\
     def process(self, inputs: list[Article]) -> list[TriageDecision]:
         all_decisions: list[TriageDecision] = []
 
-        for batch_start in range(0, len(inputs), TRIAGE_BATCH_SIZE):
+        total_batches = (len(inputs) + TRIAGE_BATCH_SIZE - 1) // TRIAGE_BATCH_SIZE
+        for batch_num, batch_start in enumerate(
+            range(0, len(inputs), TRIAGE_BATCH_SIZE), start=1
+        ):
             batch = inputs[batch_start : batch_start + TRIAGE_BATCH_SIZE]
             index_to_article = {i: article for i, article in enumerate(batch)}
 
+            self.log(
+                f"Batch {batch_num}/{total_batches}: {len(batch)} articles"
+            )
             prompt = self._format_batch_prompt(index_to_article)
             result = self._agent.run_sync(prompt)
 

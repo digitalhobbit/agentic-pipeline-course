@@ -7,6 +7,7 @@ from sqlmodel import Session
 
 class PipelineStep(ABC):
     key: str
+    verbose: bool = False
 
     @abstractmethod
     def load_inputs(self, session: Session, run_id: uuid.UUID) -> Any:
@@ -23,6 +24,10 @@ class PipelineStep(ABC):
     @abstractmethod
     def print_stats(self, outputs: Any, persist_result: Any) -> None:
         ...
+
+    def log(self, message: str) -> None:
+        if self.verbose:
+            print(f"  [{self.key}] {message}")
 
     def run(self, run_id: uuid.UUID, session: Session) -> None:
         print(f"--- Step: {self.key} ---")

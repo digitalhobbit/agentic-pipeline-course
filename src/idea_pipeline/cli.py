@@ -6,13 +6,15 @@ from idea_pipeline.db.repositories import RunRepository
 from idea_pipeline.pipeline.steps import FetchStep, TriageStep
 
 
-def run_pipeline():
+def run_pipeline(verbose: bool = False):
     session = get_session()
     run_repo = RunRepository(session)
     run = run_repo.create()
     print(f"Run {run.id} started")
 
     steps = [FetchStep(), TriageStep()]
+    for step in steps:
+        step.verbose = verbose
 
     try:
         for step in steps:
@@ -33,11 +35,14 @@ def main():
     )
     subparsers = parser.add_subparsers(dest="command")
 
-    subparsers.add_parser("run", help="Run the full pipeline")
+    run_parser = subparsers.add_parser("run", help="Run the full pipeline")
+    run_parser.add_argument(
+        "--verbose", "-v", action="store_true", help="Enable verbose output"
+    )
 
     args = parser.parse_args()
 
     if args.command == "run":
-        run_pipeline()
+        run_pipeline(verbose=args.verbose)
     else:
         parser.print_help()
