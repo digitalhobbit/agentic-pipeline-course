@@ -3,7 +3,7 @@ import argparse
 from idea_pipeline.core.models import RunStatus
 from idea_pipeline.db.database import get_session
 from idea_pipeline.db.repositories import RunRepository
-from idea_pipeline.pipeline.steps import FetchStep
+from idea_pipeline.pipeline.steps import FetchStep, TriageStep
 
 
 def run_pipeline():
@@ -12,7 +12,7 @@ def run_pipeline():
     run = run_repo.create()
     print(f"Run {run.id} started")
 
-    steps = [FetchStep()]
+    steps = [FetchStep(), TriageStep()]
 
     try:
         for step in steps:
