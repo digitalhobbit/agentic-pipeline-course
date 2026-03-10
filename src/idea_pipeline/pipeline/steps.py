@@ -12,7 +12,6 @@ from idea_pipeline.core.models import (
     BusinessSignalBase,
     MarketFactBase,
     TriageDecision,
-    TriageDecisionBase,
 )
 from idea_pipeline.core.settings import settings
 from idea_pipeline.db.repositories import (
@@ -21,12 +20,10 @@ from idea_pipeline.db.repositories import (
     TriageDecisionRepository,
 )
 from idea_pipeline.pipeline.ai_models import AIModelFactory
-from idea_pipeline.pipeline.base import PipelineStep
+from idea_pipeline.pipeline.base import BatchStep, PipelineStep
 
 
 MAX_FETCH_PAGES = 10
-TRIAGE_BATCH_SIZE = 40
-EXTRACTION_BATCH_SIZE = 10
 
 
 class FetchStep(PipelineStep):
@@ -75,7 +72,7 @@ class FetchStep(PipelineStep):
         print(f"  New:     {persist_result} articles")
 
 
-class TriageStep(PipelineStep):
+class TriageStep(BatchStep[Article, "TriageStep._IndexedDecision", TriageDecision]):
     key = "triage"
 
     _SYSTEM_PROMPT = """\
@@ -110,6 +107,10 @@ referencing articles by their index number.\
             description="One triage decision per article in the batch"
         )
 
+    @property
+    def batch_size(self) -> int:
+        return 40
+
     def __init__(self) -> None:
         factory = AIModelFactory()
         self._agent: Agent[None, TriageStep._BatchResult] = Agent(
@@ -121,35 +122,6 @@ referencing articles by their index number.\
     def load_inputs(self, session: Session, run_id: uuid.UUID) -> list[Article]:
         repo = ArticleRepository(session)
         return repo.get_articles_pending_triage()
-
-    def process(self, inputs: list[Article]) -> list[TriageDecision]:
-        all_decisions: list[TriageDecision] = []
-
-        total_batches = (len(inputs) + TRIAGE_BATCH_SIZE - 1) // TRIAGE_BATCH_SIZE
-        for batch_num, batch_start in enumerate(
-            range(0, len(inputs), TRIAGE_BATCH_SIZE), start=1
-        ):
-            batch = inputs[batch_start : batch_start + TRIAGE_BATCH_SIZE]
-            index_to_article = {i: article for i, article in enumerate(batch)}
-
-            self.log(
-                f"Batch {batch_num}/{total_batches}: {len(batch)} articles"
-            )
-            prompt = self._format_batch_prompt(index_to_article)
-            result = self._agent.run_sync(prompt)
-
-            for indexed in result.output.decisions:
-                article = index_to_article.get(indexed.index)
-                if article is None:
-                    continue
-                decision = TriageDecision(
-                    article_id=article.id,
-                    keep=indexed.keep,
-                    reason=indexed.reason,
-                )
-                all_decisions.append(decision)
-
-        return all_decisions
 
     def persist(
         self,
@@ -172,15 +144,30 @@ referencing articles by their index number.\
         print(f"  Kept:      {kept}")
         print(f"  Discarded: {discarded}")
 
-    @staticmethod
-    def _format_batch_prompt(index_to_article: dict[int, Article]) -> str:
+    def _format_batch_prompt(self, index_to_item: dict[int, Article]) -> str:
         lines = ["Please triage this batch of articles:"]
-        for idx, article in index_to_article.items():
+        for idx, article in index_to_item.items():
             lines.append(f"[{idx}] {article.title}\n{article.body[:300]}")
         return "\n\n".join(lines)
 
+    def _extract_indexed_results(
+        self, agent_output: _BatchResult
+    ) -> list[_IndexedDecision]:
+        return agent_output.decisions
 
-class ExtractionStep(PipelineStep):
+    def _map_result(
+        self, indexed: _IndexedDecision, item: Article
+    ) -> TriageDecision:
+        return TriageDecision(
+            article_id=item.id,
+            keep=indexed.keep,
+            reason=indexed.reason,
+        )
+
+
+class ExtractionStep(
+    BatchStep[Article, "ExtractionStep._IndexedInsight", ArticleInsight]
+):
     key = "extraction"
 
     _SYSTEM_PROMPT = """\
@@ -230,6 +217,10 @@ article, referencing articles by their index number.\
             description="One set of insights per article in the batch"
         )
 
+    @property
+    def batch_size(self) -> int:
+        return 10
+
     def __init__(self) -> None:
         factory = AIModelFactory()
         self._agent: Agent[None, ExtractionStep._BatchResult] = Agent(
@@ -241,41 +232,6 @@ article, referencing articles by their index number.\
     def load_inputs(self, session: Session, run_id: uuid.UUID) -> list[Article]:
         repo = ArticleRepository(session)
         return repo.get_articles_pending_extraction()
-
-    def process(self, inputs: list[Article]) -> list[ArticleInsight]:
-        all_insights: list[ArticleInsight] = []
-
-        total_batches = (
-            (len(inputs) + EXTRACTION_BATCH_SIZE - 1) // EXTRACTION_BATCH_SIZE
-        )
-        for batch_num, batch_start in enumerate(
-            range(0, len(inputs), EXTRACTION_BATCH_SIZE), start=1
-        ):
-            batch = inputs[batch_start : batch_start + EXTRACTION_BATCH_SIZE]
-            index_to_article = {i: article for i, article in enumerate(batch)}
-
-            self.log(
-                f"Batch {batch_num}/{total_batches}: {len(batch)} articles"
-            )
-            prompt = self._format_batch_prompt(index_to_article)
-            result = self._agent.run_sync(prompt)
-
-            for indexed in result.output.insights:
-                article = index_to_article.get(indexed.index)
-                if article is None:
-                    continue
-                insight = ArticleInsight(
-                    article_id=article.id,
-                    business_signals=[
-                        s.model_dump() for s in indexed.business_signals
-                    ],
-                    market_facts=[
-                        f.model_dump() for f in indexed.market_facts
-                    ],
-                )
-                all_insights.append(insight)
-
-        return all_insights
 
     def persist(
         self,
@@ -298,11 +254,28 @@ article, referencing articles by their index number.\
         print(f"  Signals:   {total_signals}")
         print(f"  Facts:     {total_facts}")
 
-    @staticmethod
-    def _format_batch_prompt(index_to_article: dict[int, Article]) -> str:
+    def _format_batch_prompt(self, index_to_item: dict[int, Article]) -> str:
         lines = ["Please extract business insights from these articles:"]
-        for idx, article in index_to_article.items():
+        for idx, article in index_to_item.items():
             lines.append(
                 f"[{idx}] {article.title}\n{article.body[:3500]}"
             )
         return "\n\n".join(lines)
+
+    def _extract_indexed_results(
+        self, agent_output: _BatchResult
+    ) -> list[_IndexedInsight]:
+        return agent_output.insights
+
+    def _map_result(
+        self, indexed: _IndexedInsight, item: Article
+    ) -> ArticleInsight:
+        return ArticleInsight(
+            article_id=item.id,
+            business_signals=[
+                s.model_dump() for s in indexed.business_signals
+            ],
+            market_facts=[
+                f.model_dump() for f in indexed.market_facts
+            ],
+        )
