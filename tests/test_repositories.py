@@ -3,8 +3,15 @@ from datetime import datetime, timezone
 
 from sqlmodel import select
 
-from idea_pipeline.core.models import Article, Run, RunStatus, TriageDecision
+from idea_pipeline.core.models import (
+    Article,
+    ArticleInsight,
+    Run,
+    RunStatus,
+    TriageDecision,
+)
 from idea_pipeline.db.repositories import (
+    ArticleInsightRepository,
     ArticleRepository,
     RunRepository,
     TriageDecisionRepository,
@@ -224,3 +231,127 @@ class TestTriageDecisionRepository:
         assert all(d.created_at is not None for d in result)
         assert result[0].keep is True
         assert result[1].keep is False
+
+
+def _setup_triaged_articles(session):
+    """Helper: create a run with 3 articles, triage 2 as kept, 1 as discarded."""
+    run = RunRepository(session).create()
+    article_repo = ArticleRepository(session)
+    article_repo.upsert_many(
+        [
+            _make_article(news_service_article_key="e1"),
+            _make_article(news_service_article_key="e2"),
+            _make_article(news_service_article_key="e3"),
+        ],
+        run.id,
+    )
+    articles = list(session.exec(select(Article)).all())
+
+    triage_repo = TriageDecisionRepository(session)
+    triage_repo.create_many(
+        [
+            TriageDecision(
+                article_id=articles[0].id, keep=True, reason="relevant", run_id=run.id
+            ),
+            TriageDecision(
+                article_id=articles[1].id, keep=True, reason="relevant", run_id=run.id
+            ),
+            TriageDecision(
+                article_id=articles[2].id,
+                keep=False,
+                reason="off-topic",
+                run_id=run.id,
+            ),
+        ]
+    )
+    return run, articles
+
+
+class TestGetArticlesPendingExtraction:
+    def test_returns_kept_articles_without_insights(self, session):
+        run, articles = _setup_triaged_articles(session)
+        repo = ArticleRepository(session)
+
+        pending = repo.get_articles_pending_extraction()
+
+        assert len(pending) == 2
+        pending_ids = {a.id for a in pending}
+        assert articles[0].id in pending_ids
+        assert articles[1].id in pending_ids
+        assert articles[2].id not in pending_ids  # discarded
+
+    def test_excludes_articles_with_insights(self, session):
+        run, articles = _setup_triaged_articles(session)
+        repo = ArticleRepository(session)
+
+        # Extract one article
+        insight_repo = ArticleInsightRepository(session)
+        insight_repo.create_many(
+            [
+                ArticleInsight(
+                    article_id=articles[0].id,
+                    business_signals=[],
+                    market_facts=[],
+                    run_id=run.id,
+                )
+            ]
+        )
+
+        pending = repo.get_articles_pending_extraction()
+        assert len(pending) == 1
+        assert pending[0].id == articles[1].id
+
+    def test_returns_empty_when_all_extracted(self, session):
+        run, articles = _setup_triaged_articles(session)
+        repo = ArticleRepository(session)
+
+        insight_repo = ArticleInsightRepository(session)
+        insight_repo.create_many(
+            [
+                ArticleInsight(
+                    article_id=articles[0].id,
+                    business_signals=[],
+                    market_facts=[],
+                    run_id=run.id,
+                ),
+                ArticleInsight(
+                    article_id=articles[1].id,
+                    business_signals=[],
+                    market_facts=[],
+                    run_id=run.id,
+                ),
+            ]
+        )
+
+        assert repo.get_articles_pending_extraction() == []
+
+
+class TestArticleInsightRepository:
+    def test_create_many(self, session):
+        run, articles = _setup_triaged_articles(session)
+
+        signals = [
+            {"headline": "AI adoption", "description": "Growing fast", "signal_type": "technology_opportunity"}
+        ]
+        facts = [
+            {"stat": "40% growth", "context": "Year over year"}
+        ]
+
+        insights = [
+            ArticleInsight(
+                article_id=articles[0].id,
+                business_signals=signals,
+                market_facts=facts,
+                run_id=run.id,
+            )
+        ]
+
+        repo = ArticleInsightRepository(session)
+        result = repo.create_many(insights)
+
+        assert len(result) == 1
+        assert isinstance(result[0].id, uuid.UUID)
+        assert result[0].run_id == run.id
+        assert result[0].created_at is not None
+        assert result[0].business_signals == signals
+        assert result[0].market_facts == facts

@@ -2,6 +2,7 @@ import enum
 import uuid
 from datetime import datetime, timezone
 
+from sqlalchemy import Column, JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 
@@ -113,4 +114,63 @@ class TriageDecision(TriageDecisionBase, table=True):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the decision was made",
+    )
+
+
+class BusinessSignalBase(SQLModel):
+    headline: str = Field(
+        description="Short headline summarizing the business signal",
+    )
+    description: str = Field(
+        description="Detailed description of the business signal",
+    )
+    signal_type: str = Field(
+        description="Type of signal: consumer_shift, pain_point, technology_opportunity, regulatory_change, or demographic_trend",
+    )
+
+
+class MarketFactBase(SQLModel):
+    stat: str = Field(
+        description="A concrete statistic useful for market sizing (e.g., '30% of franchises are owned by women')",
+    )
+    context: str = Field(
+        description="Context explaining the relevance and source of this statistic",
+    )
+
+
+class ArticleInsightBase(SQLModel):
+    article_id: uuid.UUID = Field(
+        description="ID of the article these insights were extracted from",
+    )
+    business_signals: list[BusinessSignalBase] = Field(
+        description="Business signals extracted from the article",
+    )
+    market_facts: list[MarketFactBase] = Field(
+        description="Market statistics and facts extracted from the article",
+    )
+
+
+class ArticleInsight(ArticleInsightBase, table=True):
+    __tablename__ = "article_insights"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the article insight",
+    )
+    business_signals: list[BusinessSignalBase] = Field(
+        sa_column=Column(JSON),
+        description="Business signals extracted from the article",
+    )
+    market_facts: list[MarketFactBase] = Field(
+        sa_column=Column(JSON),
+        description="Market statistics and facts extracted from the article",
+    )
+    run_id: uuid.UUID = Field(
+        foreign_key="runs.id",
+        description="ID of the pipeline run that created this insight",
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the insight was created",
     )

@@ -4,7 +4,13 @@ from datetime import datetime, timezone
 from sqlalchemy.dialects.sqlite import insert
 from sqlmodel import Session, select
 
-from idea_pipeline.core.models import Article, Run, RunStatus, TriageDecision
+from idea_pipeline.core.models import (
+    Article,
+    ArticleInsight,
+    Run,
+    RunStatus,
+    TriageDecision,
+)
 
 
 class RunRepository:
@@ -69,6 +75,17 @@ class ArticleRepository:
         )
         return list(self.session.exec(stmt).all())
 
+    def get_articles_pending_extraction(self) -> list[Article]:
+        kept_article_ids = select(TriageDecision.article_id).where(
+            TriageDecision.keep == True  # noqa: E712
+        )
+        already_extracted = select(ArticleInsight.article_id)
+        stmt = select(Article).where(
+            Article.id.in_(kept_article_ids),  # type: ignore[union-attr]
+            Article.id.notin_(already_extracted),  # type: ignore[union-attr]
+        )
+        return list(self.session.exec(stmt).all())
+
 
 class TriageDecisionRepository:
     def __init__(self, session: Session) -> None:
@@ -81,3 +98,16 @@ class TriageDecisionRepository:
         for decision in decisions:
             self.session.refresh(decision)
         return decisions
+
+
+class ArticleInsightRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def create_many(self, insights: list[ArticleInsight]) -> list[ArticleInsight]:
+        for insight in insights:
+            self.session.add(insight)
+        self.session.commit()
+        for insight in insights:
+            self.session.refresh(insight)
+        return insights
