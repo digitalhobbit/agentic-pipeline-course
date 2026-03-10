@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 from idea_pipeline.core.models import (
     Article,
     ArticleInsight,
+    Candidate,
     Run,
     RunStatus,
     TriageDecision,
@@ -111,3 +112,20 @@ class ArticleInsightRepository:
         for insight in insights:
             self.session.refresh(insight)
         return insights
+
+    def get_insights_since(self, cutoff: datetime) -> list[ArticleInsight]:
+        stmt = select(ArticleInsight).where(ArticleInsight.created_at >= cutoff)
+        return list(self.session.exec(stmt).all())
+
+
+class CandidateRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def create_many(self, candidates: list[Candidate]) -> list[Candidate]:
+        for candidate in candidates:
+            self.session.add(candidate)
+        self.session.commit()
+        for candidate in candidates:
+            self.session.refresh(candidate)
+        return candidates

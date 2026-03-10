@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from eventregistry import EventRegistry, TopicPage
 from pydantic import BaseModel, Field
@@ -10,6 +10,9 @@ from idea_pipeline.core.models import (
     Article,
     ArticleInsight,
     BusinessSignalBase,
+    Candidate,
+    CandidateArchetype,
+    CandidateBase,
     MarketFactBase,
     TriageDecision,
 )
@@ -17,6 +20,7 @@ from idea_pipeline.core.settings import settings
 from idea_pipeline.db.repositories import (
     ArticleInsightRepository,
     ArticleRepository,
+    CandidateRepository,
     TriageDecisionRepository,
 )
 from idea_pipeline.pipeline.ai_models import AIModelFactory
@@ -32,7 +36,7 @@ class FetchStep(PipelineStep):
     def load_inputs(self, session: Session, run_id: uuid.UUID) -> None:
         return None
 
-    def process(self, inputs: None) -> list[Article]:
+    async def process(self, inputs: None) -> list[Article]:
         er = EventRegistry(apiKey=settings.newsapi_api_key)
         topic = TopicPage(er)
         topic.loadTopicPageFromER(settings.newsapi_topic_uri)
@@ -279,3 +283,133 @@ article, referencing articles by their index number.\
                 f.model_dump() for f in indexed.market_facts
             ],
         )
+
+
+class SynthesisStep(PipelineStep):
+    key = "synthesis"
+
+    _SYSTEM_PROMPT = """\
+You are a startup ideation strategist who transforms business signals and \
+market facts into concrete startup concepts. You generate exactly 3 startup \
+candidates, one for each archetype:
+
+- **META_TREND**: A major market shift or macro trend that creates a large new \
+opportunity. Think big structural changes in how industries work.
+- **FRICTION_POINT**: An unsexy but real B2B problem — the kind of operational \
+pain that companies will pay to eliminate. Think back-office inefficiency, \
+compliance headaches, or workflow bottlenecks.
+- **RABBIT_HOLE**: A fascinating niche that most people overlook but has a \
+passionate or underserved audience. Think obscure hobbies, emerging subcultures, \
+or overlooked professional niches.
+
+Constraints:
+- **Digital products only**: SaaS platforms, mobile/web apps, APIs, browser \
+extensions, or data services. No physical goods, manufacturing, hardware, or \
+inventory-based businesses.
+- **Solo-developer scope**: Each idea must be buildable by a single developer \
+with AI assistance in 2-4 weeks for an MVP.
+- **supporting_article_ids**: Each candidate MUST reference actual article IDs \
+from the input that support the idea. Use the article IDs provided — do not \
+invent IDs.
+- **Score**: Rate each idea 0-100 based on market size, feasibility for a solo \
+developer, clarity of the pain point, and timing (why now).\
+"""
+
+    class _SynthesisResult(BaseModel):
+        candidates: list[CandidateBase] = Field(
+            description="Exactly 3 startup candidates, one per archetype"
+        )
+
+    def __init__(self) -> None:
+        factory = AIModelFactory()
+        self._agent: Agent[None, SynthesisStep._SynthesisResult] = Agent(
+            factory.get_model(self.key),
+            system_prompt=self._SYSTEM_PROMPT,
+            output_type=SynthesisStep._SynthesisResult,
+        )
+
+    def load_inputs(
+        self, session: Session, run_id: uuid.UUID
+    ) -> list[ArticleInsight]:
+        cutoff = datetime.now(timezone.utc).replace(
+            hour=0, minute=0, second=0, microsecond=0
+        ) - timedelta(days=3)
+        repo = ArticleInsightRepository(session)
+        return repo.get_insights_since(cutoff)
+
+    async def process(self, inputs: list[ArticleInsight]) -> list[Candidate]:
+        if not inputs:
+            return []
+
+        prompt = self._format_prompt(inputs)
+        result = await self._agent.run(prompt)
+
+        candidates: list[Candidate] = []
+        for c in result.output.candidates:
+            candidates.append(
+                Candidate(
+                    archetype=c.archetype,
+                    theme=c.theme,
+                    why_now=c.why_now,
+                    score=c.score,
+                    one_liner=c.one_liner,
+                    target_customer=c.target_customer,
+                    problem_to_solve=c.problem_to_solve,
+                    solution_overview=c.solution_overview,
+                    supporting_article_ids=c.supporting_article_ids,
+                )
+            )
+        return candidates
+
+    def persist(
+        self,
+        session: Session,
+        run_id: uuid.UUID,
+        outputs: list[Candidate],
+    ) -> int:
+        for candidate in outputs:
+            candidate.run_id = run_id
+        repo = CandidateRepository(session)
+        repo.create_many(outputs)
+        return len(outputs)
+
+    def print_stats(
+        self, outputs: list[Candidate], persist_result: int
+    ) -> None:
+        print(f"  Candidates: {persist_result}")
+        for c in outputs:
+            print(f"    [{c.archetype.value}] {c.theme} (score: {c.score})")
+
+    def _format_prompt(self, insights: list[ArticleInsight]) -> str:
+        lines = [
+            "Generate 3 startup candidates (one META_TREND, one FRICTION_POINT, "
+            "one RABBIT_HOLE) from these business insights:\n"
+        ]
+        for insight in insights:
+            lines.append(f"Article ID: {insight.article_id}")
+            if insight.business_signals:
+                for signal in insight.business_signals:
+                    if isinstance(signal, dict):
+                        lines.append(
+                            f"  Signal [{signal.get('signal_type', '')}]: "
+                            f"{signal.get('headline', '')} — "
+                            f"{signal.get('description', '')}"
+                        )
+                    else:
+                        lines.append(
+                            f"  Signal [{signal.signal_type}]: "
+                            f"{signal.headline} — {signal.description}"
+                        )
+            if insight.market_facts:
+                for fact in insight.market_facts:
+                    if isinstance(fact, dict):
+                        lines.append(
+                            f"  Fact: {fact.get('stat', '')} — "
+                            f"{fact.get('context', '')}"
+                        )
+                    else:
+                        lines.append(
+                            f"  Fact: {fact.stat} — {fact.context}"
+                        )
+            lines.append("")
+        return "\n".join(lines)

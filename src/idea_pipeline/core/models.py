@@ -6,6 +6,12 @@ from sqlalchemy import Column, JSON
 from sqlmodel import Field, SQLModel, UniqueConstraint
 
 
+class CandidateArchetype(str, enum.Enum):
+    META_TREND = "meta_trend"
+    FRICTION_POINT = "friction_point"
+    RABBIT_HOLE = "rabbit_hole"
+
+
 class RunStatus(str, enum.Enum):
     IN_PROGRESS = "in_progress"
     COMPLETED = "completed"
@@ -173,4 +179,56 @@ class ArticleInsight(ArticleInsightBase, table=True):
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the insight was created",
+    )
+
+
+class CandidateBase(SQLModel):
+    archetype: CandidateArchetype = Field(
+        description="The ideation archetype: META_TREND (major market shift), FRICTION_POINT (unsexy B2B problem), or RABBIT_HOLE (fascinating niche)",
+    )
+    theme: str = Field(
+        description="Headline for this startup idea (e.g. 'The Collapse of Legacy Insurance')",
+    )
+    why_now: str = Field(
+        description="Why this idea is relevant today, citing specific signals from the input articles",
+    )
+    score: int = Field(
+        description="Business viability score from 0-100 based on market potential",
+    )
+    one_liner: str = Field(
+        description="Clear, concise value proposition for the startup",
+    )
+    target_customer: str = Field(
+        description="Who pays for this product — the primary customer segment",
+    )
+    problem_to_solve: str = Field(
+        description="The specific pain point this startup addresses",
+    )
+    solution_overview: str = Field(
+        description="How the product works at a high level",
+    )
+    supporting_article_ids: list[str] = Field(
+        description="List of article UUIDs that support this candidate idea",
+    )
+
+
+class Candidate(CandidateBase, table=True):
+    __tablename__ = "candidates"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the candidate",
+    )
+    supporting_article_ids: list[str] = Field(
+        sa_column=Column(JSON),
+        description="List of article UUIDs that support this candidate idea",
+    )
+    run_id: uuid.UUID = Field(
+        foreign_key="runs.id",
+        description="ID of the pipeline run that generated this candidate",
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the candidate was created",
     )

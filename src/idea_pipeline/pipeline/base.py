@@ -22,7 +22,7 @@ class PipelineStep(ABC):
         ...
 
     @abstractmethod
-    def process(self, inputs: Any) -> Any:
+    async def process(self, inputs: Any) -> Any:
         ...
 
     @abstractmethod
@@ -37,10 +37,10 @@ class PipelineStep(ABC):
         if self.verbose:
             print(f"  [{self.key}] {message}")
 
-    def run(self, run_id: uuid.UUID, session: Session) -> None:
+    async def run(self, run_id: uuid.UUID, session: Session) -> None:
         print(f"--- Step: {self.key} ---")
         inputs = self.load_inputs(session, run_id)
-        outputs = self.process(inputs)
+        outputs = await self.process(inputs)
         persist_result = self.persist(session, run_id, outputs)
         self.print_stats(outputs, persist_result)
 
@@ -65,8 +65,8 @@ class BatchStep(PipelineStep, Generic[InputT, IndexedT, OutputT]):
     def _map_result(self, indexed: IndexedT, item: InputT) -> OutputT:
         ...
 
-    def process(self, inputs: list[InputT]) -> list[OutputT]:
-        return asyncio.run(self._process_batches(inputs))
+    async def process(self, inputs: list[InputT]) -> list[OutputT]:
+        return await self._process_batches(inputs)
 
     async def _process_batches(self, inputs: list[InputT]) -> list[OutputT]:
         semaphore = asyncio.Semaphore(MAX_CONCURRENT_BATCHES)

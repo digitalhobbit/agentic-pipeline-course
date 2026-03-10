@@ -1,11 +1,13 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlmodel import select
 
 from idea_pipeline.core.models import (
     Article,
     ArticleInsight,
+    Candidate,
+    CandidateArchetype,
     Run,
     RunStatus,
     TriageDecision,
@@ -13,6 +15,7 @@ from idea_pipeline.core.models import (
 from idea_pipeline.db.repositories import (
     ArticleInsightRepository,
     ArticleRepository,
+    CandidateRepository,
     RunRepository,
     TriageDecisionRepository,
 )
@@ -355,3 +358,118 @@ class TestArticleInsightRepository:
         assert result[0].created_at is not None
         assert result[0].business_signals == signals
         assert result[0].market_facts == facts
+
+    def test_get_insights_since_filters_by_cutoff(self, session):
+        run, articles = _setup_triaged_articles(session)
+        repo = ArticleInsightRepository(session)
+
+        now = datetime.now(timezone.utc)
+        old_insight = ArticleInsight(
+            article_id=articles[0].id,
+            business_signals=[],
+            market_facts=[],
+            run_id=run.id,
+        )
+        repo.create_many([old_insight])
+
+        # Manually backdate the old insight
+        old_insight.created_at = now - timedelta(days=5)
+        session.add(old_insight)
+        session.commit()
+
+        recent_insight = ArticleInsight(
+            article_id=articles[1].id,
+            business_signals=[],
+            market_facts=[],
+            run_id=run.id,
+        )
+        repo.create_many([recent_insight])
+
+        cutoff = now - timedelta(days=3)
+        results = repo.get_insights_since(cutoff)
+        assert len(results) == 1
+        assert results[0].article_id == articles[1].id
+
+    def test_get_insights_since_returns_all_when_recent(self, session):
+        run, articles = _setup_triaged_articles(session)
+        repo = ArticleInsightRepository(session)
+
+        repo.create_many([
+            ArticleInsight(
+                article_id=articles[0].id,
+                business_signals=[],
+                market_facts=[],
+                run_id=run.id,
+            ),
+            ArticleInsight(
+                article_id=articles[1].id,
+                business_signals=[],
+                market_facts=[],
+                run_id=run.id,
+            ),
+        ])
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=3)
+        results = repo.get_insights_since(cutoff)
+        assert len(results) == 2
+
+    def test_get_insights_since_returns_empty_when_none_match(self, session):
+        run, articles = _setup_triaged_articles(session)
+        repo = ArticleInsightRepository(session)
+
+        cutoff = datetime.now(timezone.utc) + timedelta(days=1)
+        results = repo.get_insights_since(cutoff)
+        assert results == []
+
+
+def _make_candidate(**overrides) -> Candidate:
+    defaults = {
+        "archetype": CandidateArchetype.META_TREND,
+        "theme": "Test Theme",
+        "why_now": "Test why now",
+        "score": 75,
+        "one_liner": "Test value prop",
+        "target_customer": "Test customer",
+        "problem_to_solve": "Test problem",
+        "solution_overview": "Test solution",
+        "supporting_article_ids": [str(uuid.uuid4())],
+    }
+    defaults.update(overrides)
+    return Candidate(**defaults)
+
+
+class TestCandidateRepository:
+    def test_create_many(self, session):
+        run = RunRepository(session).create()
+        repo = CandidateRepository(session)
+
+        candidates = [
+            _make_candidate(
+                archetype=CandidateArchetype.META_TREND,
+                theme="AI Disruption",
+                run_id=run.id,
+            ),
+            _make_candidate(
+                archetype=CandidateArchetype.FRICTION_POINT,
+                theme="Compliance Bot",
+                run_id=run.id,
+            ),
+            _make_candidate(
+                archetype=CandidateArchetype.RABBIT_HOLE,
+                theme="Niche Hobby Platform",
+                run_id=run.id,
+            ),
+        ]
+
+        result = repo.create_many(candidates)
+
+        assert len(result) == 3
+        assert all(isinstance(c.id, uuid.UUID) for c in result)
+        assert all(c.run_id == run.id for c in result)
+        assert all(c.created_at is not None for c in result)
+        archetypes = {c.archetype for c in result}
+        assert archetypes == {
+            CandidateArchetype.META_TREND,
+            CandidateArchetype.FRICTION_POINT,
+            CandidateArchetype.RABBIT_HOLE,
+        }

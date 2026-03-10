@@ -1,24 +1,25 @@
 import argparse
+import asyncio
 
 from idea_pipeline.core.models import RunStatus
 from idea_pipeline.db.database import get_session
 from idea_pipeline.db.repositories import RunRepository
-from idea_pipeline.pipeline.steps import ExtractionStep, FetchStep, TriageStep
+from idea_pipeline.pipeline.steps import ExtractionStep, FetchStep, SynthesisStep, TriageStep
 
 
-def run_pipeline(verbose: bool = False):
+async def run_pipeline(verbose: bool = False):
     session = get_session()
     run_repo = RunRepository(session)
     run = run_repo.create()
     print(f"Run {run.id} started")
 
-    steps = [FetchStep(), TriageStep(), ExtractionStep()]
+    steps = [FetchStep(), TriageStep(), ExtractionStep(), SynthesisStep()]
     for step in steps:
         step.verbose = verbose
 
     try:
         for step in steps:
-            step.run(run.id, session)
+            await step.run(run.id, session)
             run_repo.update_status(run.id, RunStatus.IN_PROGRESS, step.key)
         run_repo.update_status(run.id, RunStatus.COMPLETED, steps[-1].key)
         print(f"Run {run.id} completed")
@@ -43,6 +44,6 @@ def main():
     args = parser.parse_args()
 
     if args.command == "run":
-        run_pipeline(verbose=args.verbose)
+        asyncio.run(run_pipeline(verbose=args.verbose))
     else:
         parser.print_help()

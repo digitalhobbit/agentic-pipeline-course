@@ -49,7 +49,7 @@ Each step reads its own inputs from the database and persists its outputs. Steps
 1. **Fetch** — Retrieve news articles from News API (newsapi.ai, SDK: `eventregistry`), store in database
 2. **Triage** — AI filters articles for business relevance (keep/discard decisions)
 3. **Extraction** — AI extracts business signals and market facts from kept articles
-4. **Synthesis** — AI generates 3 startup candidates from insights (uses 4-day rolling window)
+4. **Synthesis** — AI generates 3 startup candidates from insights (uses ~4-day rolling window, one per archetype: META_TREND, FRICTION_POINT, RABBIT_HOLE)
 5. **Deep Dive** — Selects best candidate via scoring, AI expands into full business model
 6. **Writer** — AI generates the final newsletter post as markdown
 7. **Visualizer** — AI generates an image prompt and caption for the header image
