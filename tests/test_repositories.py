@@ -62,6 +62,16 @@ class TestRunRepository:
         assert updated.status == RunStatus.FAILED
         assert updated.completed_at is not None
 
+    def test_update_status_failed_preserves_last_completed_step(self, session):
+        repo = RunRepository(session)
+        run = repo.create()
+
+        repo.update_status(run.id, RunStatus.IN_PROGRESS, "triage")
+        updated = repo.update_status(run.id, RunStatus.FAILED)
+
+        assert updated.status == RunStatus.FAILED
+        assert updated.last_completed_step_key == "triage"
+
     def test_update_status_in_progress_step(self, session):
         repo = RunRepository(session)
         run = repo.create()
@@ -70,6 +80,19 @@ class TestRunRepository:
         assert updated.status == RunStatus.IN_PROGRESS
         assert updated.completed_at is None
         assert updated.last_completed_step_key == "triage"
+
+    def test_get_most_recent_returns_latest(self, session):
+        repo = RunRepository(session)
+        repo.create()
+        second = repo.create()
+
+        most_recent = repo.get_most_recent()
+        assert most_recent is not None
+        assert most_recent.id == second.id
+
+    def test_get_most_recent_returns_none_when_empty(self, session):
+        repo = RunRepository(session)
+        assert repo.get_most_recent() is None
 
 
 def _make_article(**overrides) -> Article:
