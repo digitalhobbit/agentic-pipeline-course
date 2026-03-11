@@ -290,3 +290,33 @@ class BusinessModel(BusinessModelBase, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the business model was created",
     )
+
+
+class NewsletterPostBase(SQLModel):
+    subject_line: str = Field(
+        description="High-CTR email subject line for the newsletter",
+    )
+    preview_text: str = Field(
+        description="Short text shown in email client preview pane",
+    )
+    markdown_content: str = Field(
+        description="The full newsletter body in markdown format",
+    )
+
+
+class NewsletterPost(NewsletterPostBase, table=True):
+    __tablename__ = "newsletter_posts"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the newsletter post",
+    )
+    run_id: uuid.UUID = Field(
+        foreign_key="runs.id",
+        description="ID of the pipeline run that generated this newsletter post",
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the newsletter post was created",
+    )

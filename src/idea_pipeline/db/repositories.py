@@ -9,6 +9,7 @@ from idea_pipeline.core.models import (
     ArticleInsight,
     BusinessModel,
     Candidate,
+    NewsletterPost,
     Run,
     RunStatus,
     TriageDecision,
@@ -150,6 +151,11 @@ class CandidateRepository:
             self.session.refresh(candidate)
         return candidates
 
+    def get_by_id(self, candidate_id: uuid.UUID) -> Candidate | None:
+        return self.session.exec(
+            select(Candidate).where(Candidate.id == candidate_id)
+        ).first()
+
     def get_top_candidate_for_run(self, run_id: uuid.UUID) -> Candidate | None:
         stmt = (
             select(Candidate)
@@ -173,3 +179,14 @@ class BusinessModelRepository:
     def get_by_run_id(self, run_id: uuid.UUID) -> BusinessModel | None:
         stmt = select(BusinessModel).where(BusinessModel.run_id == run_id)
         return self.session.exec(stmt).first()
+
+
+class NewsletterPostRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def create(self, post: NewsletterPost) -> NewsletterPost:
+        self.session.add(post)
+        self.session.commit()
+        self.session.refresh(post)
+        return post
