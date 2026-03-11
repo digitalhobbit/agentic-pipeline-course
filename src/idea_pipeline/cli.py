@@ -4,9 +4,15 @@ import asyncio
 from idea_pipeline.core.models import RunStatus
 from idea_pipeline.db.database import get_session
 from idea_pipeline.db.repositories import RunRepository
-from idea_pipeline.pipeline.steps import DeepDiveStep, ExtractionStep, FetchStep, SynthesisStep, TriageStep, WriterStep
+from idea_pipeline.pipeline.steps import (
+    DeepDiveStep, ExtractionStep, FetchStep, ImageGeneratorStep,
+    SynthesisStep, TriageStep, VisualizerStep, WriterStep,
+)
 
-ALL_STEPS = [FetchStep(), TriageStep(), ExtractionStep(), SynthesisStep(), DeepDiveStep(), WriterStep()]
+ALL_STEPS = [
+    FetchStep(), TriageStep(), ExtractionStep(), SynthesisStep(),
+    DeepDiveStep(), WriterStep(), VisualizerStep(), ImageGeneratorStep(),
+]
 STEP_KEYS = [step.key for step in ALL_STEPS]
 
 

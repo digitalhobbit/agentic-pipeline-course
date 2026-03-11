@@ -13,6 +13,7 @@ from idea_pipeline.core.models import (
     Run,
     RunStatus,
     TriageDecision,
+    VisualConcept,
 )
 
 
@@ -190,3 +191,18 @@ class NewsletterPostRepository:
         self.session.commit()
         self.session.refresh(post)
         return post
+
+
+class VisualConceptRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def create(self, concept: VisualConcept) -> VisualConcept:
+        self.session.add(concept)
+        self.session.commit()
+        self.session.refresh(concept)
+        return concept
+
+    def get_by_run_id(self, run_id: uuid.UUID) -> VisualConcept | None:
+        stmt = select(VisualConcept).where(VisualConcept.run_id == run_id)
+        return self.session.exec(stmt).first()

@@ -6,6 +6,7 @@ from idea_pipeline.core.settings import settings
 _STEP_MODELS: dict[str, str] = {
     "triage": "gemini-2.5-flash-lite",
     "extraction": "gemini-2.5-flash",
+    "image_generator": "gemini-3-pro-image-preview",
 }
 
 _DEFAULT_MODEL = "gemini-2.5-pro"

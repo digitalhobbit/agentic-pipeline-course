@@ -320,3 +320,30 @@ class NewsletterPost(NewsletterPostBase, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the newsletter post was created",
     )
+
+
+class VisualConceptBase(SQLModel):
+    image_prompt: str = Field(
+        description="Detailed prompt for generating the newsletter header image",
+    )
+    caption: str = Field(
+        description="Short caption describing the generated image",
+    )
+
+
+class VisualConcept(VisualConceptBase, table=True):
+    __tablename__ = "visual_concepts"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the visual concept",
+    )
+    run_id: uuid.UUID = Field(
+        foreign_key="runs.id",
+        description="ID of the pipeline run that generated this visual concept",
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the visual concept was created",
+    )

@@ -4,7 +4,7 @@ from pathlib import Path
 
 from eventregistry import EventRegistry, TopicPage
 from pydantic import BaseModel, Field
-from pydantic_ai import Agent
+from pydantic_ai import Agent, BinaryImage
 from sqlmodel import Session
 
 from idea_pipeline.core.models import (
@@ -20,6 +20,8 @@ from idea_pipeline.core.models import (
     NewsletterPost,
     NewsletterPostBase,
     TriageDecision,
+    VisualConcept,
+    VisualConceptBase,
 )
 from idea_pipeline.core.settings import settings
 from idea_pipeline.db.repositories import (
@@ -29,6 +31,7 @@ from idea_pipeline.db.repositories import (
     CandidateRepository,
     NewsletterPostRepository,
     TriageDecisionRepository,
+    VisualConceptRepository,
 )
 from idea_pipeline.pipeline.ai_models import AIModelFactory
 from idea_pipeline.pipeline.base import BatchStep, PipelineStep
@@ -707,3 +710,176 @@ Start directly with ## The Signal.\
                 lines.append(f"- [{article.id}] \"{article.title}\" — {article.source} ({article.url})")
 
         return "\n".join(lines)
+
+
+class VisualizerStep(PipelineStep):
+    key = "visualizer"
+
+    _SYSTEM_PROMPT = """\
+You are a senior art director creating image prompts for a tech startup \
+newsletter called "Idea Pipeline". Your job is to craft a detailed, evocative \
+image generation prompt and a short caption for the newsletter header image.
+
+The image prompt should:
+- Be 2-4 sentences describing the visual composition, style, colors, and mood
+- CRITICAL: The prompt MUST explicitly state "no text, no words, no letters, \
+no numbers, no typography, no labels, no captions, no titles anywhere in the \
+image". This is non-negotiable — image generation models tend to add text \
+unless forcefully told not to
+- Be suitable for a 16:9 header image
+- Match the visual style directive provided for the candidate's archetype
+- Evoke the startup's theme and problem space through metaphor and symbolism \
+rather than through text or labels
+
+The caption should be 5-10 words summarizing what the image depicts.\
+"""
+
+    _ARCHETYPE_STYLES = {
+        CandidateArchetype.META_TREND: (
+            "Visual style: dark, techy aesthetic. Use glass morphism effects, "
+            "neon accent colors (cyan, magenta), deep navy or black backgrounds, "
+            "and subtle grid patterns. Think futuristic dashboard or data "
+            "visualization."
+        ),
+        CandidateArchetype.FRICTION_POINT: (
+            "Visual style: industrial, structured look. Use bold geometric "
+            "grids, strong lines, muted earth tones with one accent color "
+            "(orange or yellow), and a sense of mechanical precision. Think "
+            "blueprint or factory floor."
+        ),
+        CandidateArchetype.RABBIT_HOLE: (
+            "Visual style: playful or abstract. Use soft 3D renders, paper "
+            "cutout textures, or illustrated elements. Warm pastel palette "
+            "with unexpected color pops. Think whimsical editorial "
+            "illustration."
+        ),
+    }
+
+    def __init__(self) -> None:
+        factory = AIModelFactory()
+        self._agent: Agent[None, VisualConceptBase] = Agent(
+            factory.get_model(self.key),
+            system_prompt=self._SYSTEM_PROMPT,
+            output_type=VisualConceptBase,
+        )
+
+    def load_inputs(
+        self, session: Session, run_id: uuid.UUID
+    ) -> tuple[Candidate, BusinessModel] | None:
+        bm_repo = BusinessModelRepository(session)
+        business_model = bm_repo.get_by_run_id(run_id)
+        if business_model is None:
+            return None
+
+        candidate_repo = CandidateRepository(session)
+        candidate = candidate_repo.get_by_id(business_model.candidate_id)
+        if candidate is None:
+            return None
+
+        return candidate, business_model
+
+    async def process(
+        self, inputs: tuple[Candidate, BusinessModel] | None
+    ) -> VisualConcept | None:
+        if inputs is None:
+            return None
+
+        candidate, business_model = inputs
+        prompt = self._format_prompt(candidate, business_model)
+        result = await self._agent.run(prompt)
+        output = result.output
+
+        return VisualConcept(
+            image_prompt=output.image_prompt,
+            caption=output.caption,
+        )
+
+    def persist(
+        self,
+        session: Session,
+        run_id: uuid.UUID,
+        outputs: VisualConcept | None,
+    ) -> int:
+        if outputs is None:
+            return 0
+        outputs.run_id = run_id
+        repo = VisualConceptRepository(session)
+        repo.create(outputs)
+        return 1
+
+    def print_stats(
+        self, outputs: VisualConcept | None, persist_result: int
+    ) -> None:
+        if outputs is None:
+            print("  No business model to visualize")
+            return
+        print(f"  Caption: {outputs.caption}")
+        print(f"  Prompt:  {outputs.image_prompt[:100]}...")
+
+    def _format_prompt(
+        self, candidate: Candidate, business_model: BusinessModel
+    ) -> str:
+        style = self._ARCHETYPE_STYLES[candidate.archetype]
+        return "\n".join([
+            "Create an image prompt and caption for this startup's "
+            "newsletter header:\n",
+            f"Startup name: {business_model.name}",
+            f"Theme: {candidate.theme}",
+            f"One-liner: {candidate.one_liner}",
+            f"Problem: {candidate.problem_to_solve}",
+            f"Solution: {candidate.solution_overview}",
+            f"Archetype: {candidate.archetype.value}",
+            f"\n{style}",
+        ])
+
+
+class ImageGeneratorStep(PipelineStep):
+    key = "image_generator"
+
+    def __init__(self) -> None:
+        factory = AIModelFactory()
+        self._agent: Agent[None, BinaryImage] = Agent(
+            factory.get_model(self.key),
+            output_type=BinaryImage,
+        )
+
+    def load_inputs(
+        self, session: Session, run_id: uuid.UUID
+    ) -> VisualConcept | None:
+        repo = VisualConceptRepository(session)
+        return repo.get_by_run_id(run_id)
+
+    async def process(
+        self, inputs: VisualConcept | None
+    ) -> bytes | None:
+        if inputs is None:
+            return None
+
+        prompt = (
+            f"{inputs.image_prompt} "
+            "Absolutely no text, no words, no letters, no numbers, no titles, "
+            "no labels, no captions, no typography anywhere in the image."
+        )
+        result = await self._agent.run(prompt)
+        return result.output.data
+
+    def persist(
+        self,
+        session: Session,
+        run_id: uuid.UUID,
+        outputs: bytes | None,
+    ) -> int:
+        if outputs is None:
+            return 0
+
+        output_dir = Path("output")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "header.png").write_bytes(outputs)
+        return 1
+
+    def print_stats(self, outputs: bytes | None, persist_result: int) -> None:
+        if outputs is None:
+            print("  No visual concept to generate image from")
+            return
+        size_kb = len(outputs) / 1024
+        print(f"  Output: output/header.png ({size_kb:.0f} KB)")
