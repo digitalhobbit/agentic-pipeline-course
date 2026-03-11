@@ -593,7 +593,10 @@ Recommend an MVP tech stack. Emphasize this is just one way to build it — the 
 reader should pick tools they already know. Keep it practical and specific.
 
 Cite the source articles organically throughout the newsletter wherever they \
-add credibility — not just in one section.
+add credibility — not just in one section. You MUST include at least one \
+inline markdown link to a source article, and preferably several. Use the \
+article URLs provided in the input. Example: \
+[VentureBeat](https://venturebeat.com/...).
 
 Do NOT include a title or H1 heading — the newsletter platform handles that. \
 Start directly with ## The Signal.\
@@ -701,6 +704,6 @@ Start directly with ## The Signal.\
         if articles:
             lines.append("\n## Source Articles (cite throughout where relevant)")
             for article in articles:
-                lines.append(f"- \"{article.title}\" — {article.source} ({article.url})")
+                lines.append(f"- [{article.id}] \"{article.title}\" — {article.source} ({article.url})")
 
         return "\n".join(lines)
