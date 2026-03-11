@@ -6,6 +6,7 @@ from sqlmodel import select
 from idea_pipeline.core.models import (
     Article,
     ArticleInsight,
+    BusinessModel,
     Candidate,
     CandidateArchetype,
     Run,
@@ -15,6 +16,7 @@ from idea_pipeline.core.models import (
 from idea_pipeline.db.repositories import (
     ArticleInsightRepository,
     ArticleRepository,
+    BusinessModelRepository,
     CandidateRepository,
     RunRepository,
     TriageDecisionRepository,
@@ -444,6 +446,52 @@ class TestArticleInsightRepository:
         results = repo.get_insights_since(cutoff)
         assert results == []
 
+    def test_get_insights_since_respects_limit(self, session):
+        run, articles = _setup_triaged_articles(session)
+        repo = ArticleInsightRepository(session)
+
+        repo.create_many([
+            ArticleInsight(
+                article_id=articles[0].id,
+                business_signals=[],
+                market_facts=[],
+                run_id=run.id,
+            ),
+            ArticleInsight(
+                article_id=articles[1].id,
+                business_signals=[],
+                market_facts=[],
+                run_id=run.id,
+            ),
+        ])
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=3)
+        results = repo.get_insights_since(cutoff, limit=1)
+        assert len(results) == 1
+
+    def test_get_insights_since_no_limit_returns_all(self, session):
+        run, articles = _setup_triaged_articles(session)
+        repo = ArticleInsightRepository(session)
+
+        repo.create_many([
+            ArticleInsight(
+                article_id=articles[0].id,
+                business_signals=[],
+                market_facts=[],
+                run_id=run.id,
+            ),
+            ArticleInsight(
+                article_id=articles[1].id,
+                business_signals=[],
+                market_facts=[],
+                run_id=run.id,
+            ),
+        ])
+
+        cutoff = datetime.now(timezone.utc) - timedelta(days=3)
+        results = repo.get_insights_since(cutoff)
+        assert len(results) == 2
+
 
 def _make_candidate(**overrides) -> Candidate:
     defaults = {
@@ -496,3 +544,126 @@ class TestCandidateRepository:
             CandidateArchetype.FRICTION_POINT,
             CandidateArchetype.RABBIT_HOLE,
         }
+
+    def test_get_top_candidate_for_run(self, session):
+        run = RunRepository(session).create()
+        repo = CandidateRepository(session)
+
+        candidates = [
+            _make_candidate(
+                archetype=CandidateArchetype.META_TREND,
+                theme="Low Score",
+                score=40,
+                run_id=run.id,
+            ),
+            _make_candidate(
+                archetype=CandidateArchetype.FRICTION_POINT,
+                theme="High Score",
+                score=90,
+                run_id=run.id,
+            ),
+            _make_candidate(
+                archetype=CandidateArchetype.RABBIT_HOLE,
+                theme="Mid Score",
+                score=65,
+                run_id=run.id,
+            ),
+        ]
+        repo.create_many(candidates)
+
+        top = repo.get_top_candidate_for_run(run.id)
+        assert top is not None
+        assert top.theme == "High Score"
+        assert top.score == 90
+
+    def test_get_top_candidate_for_run_empty(self, session):
+        run = RunRepository(session).create()
+        repo = CandidateRepository(session)
+
+        result = repo.get_top_candidate_for_run(run.id)
+        assert result is None
+
+
+class TestArticleRepositoryGetByIds:
+    def test_get_by_ids(self, session):
+        run = RunRepository(session).create()
+        repo = ArticleRepository(session)
+
+        repo.upsert_many(
+            [
+                _make_article(news_service_article_key="x1"),
+                _make_article(news_service_article_key="x2"),
+                _make_article(news_service_article_key="x3"),
+            ],
+            run.id,
+        )
+        all_articles = list(session.exec(select(Article)).all())
+
+        target_ids = [all_articles[0].id, all_articles[2].id]
+        result = repo.get_by_ids(target_ids)
+
+        assert len(result) == 2
+        result_ids = {a.id for a in result}
+        assert all_articles[0].id in result_ids
+        assert all_articles[2].id in result_ids
+
+    def test_get_by_ids_empty_list(self, session):
+        repo = ArticleRepository(session)
+        assert repo.get_by_ids([]) == []
+
+
+def _make_business_model(run_id: uuid.UUID, candidate_id: uuid.UUID, **overrides) -> BusinessModel:
+    defaults = {
+        "name": "TestStartup",
+        "value_proposition": "Makes testing easy",
+        "unfair_advantage": "First mover in test automation",
+        "revenue_streams": ["$19/mo pro tier", "$49/mo team tier"],
+        "go_to_market": ["Reddit r/testing", "Dev Twitter", "HN Show"],
+        "known_competitors": ["Competitor A - lacks AI", "Competitor B - too expensive"],
+        "tech_stack_recommendation": "Next.js + Supabase + Vercel",
+        "run_id": run_id,
+        "candidate_id": candidate_id,
+    }
+    defaults.update(overrides)
+    return BusinessModel(**defaults)
+
+
+class TestBusinessModelRepository:
+    def test_create(self, session):
+        run = RunRepository(session).create()
+        candidate_repo = CandidateRepository(session)
+        candidate = _make_candidate(run_id=run.id)
+        candidate_repo.create_many([candidate])
+
+        repo = BusinessModelRepository(session)
+        model = _make_business_model(run.id, candidate.id)
+        result = repo.create(model)
+
+        assert isinstance(result.id, uuid.UUID)
+        assert result.run_id == run.id
+        assert result.candidate_id == candidate.id
+        assert result.name == "TestStartup"
+        assert result.revenue_streams == ["$19/mo pro tier", "$49/mo team tier"]
+        assert result.go_to_market == ["Reddit r/testing", "Dev Twitter", "HN Show"]
+        assert result.known_competitors == ["Competitor A - lacks AI", "Competitor B - too expensive"]
+        assert result.created_at is not None
+
+    def test_get_by_run_id(self, session):
+        run = RunRepository(session).create()
+        candidate_repo = CandidateRepository(session)
+        candidate = _make_candidate(run_id=run.id)
+        candidate_repo.create_many([candidate])
+
+        repo = BusinessModelRepository(session)
+        model = _make_business_model(run.id, candidate.id)
+        repo.create(model)
+
+        fetched = repo.get_by_run_id(run.id)
+        assert fetched is not None
+        assert fetched.name == "TestStartup"
+        assert fetched.candidate_id == candidate.id
+
+    def test_get_by_run_id_not_found(self, session):
+        repo = BusinessModelRepository(session)
+        result = repo.get_by_run_id(uuid.uuid4())
+        assert result is None

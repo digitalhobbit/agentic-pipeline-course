@@ -232,3 +232,61 @@ class Candidate(CandidateBase, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the candidate was created",
     )
+
+
+class BusinessModelBase(SQLModel):
+    name: str = Field(
+        description="A catchy, memorable startup name",
+    )
+    value_proposition: str = Field(
+        description="What makes this product compelling — the core promise to customers",
+    )
+    unfair_advantage: str = Field(
+        description="The moat: why this is hard to copy, what gives this startup a defensible edge",
+    )
+    revenue_streams: list[str] = Field(
+        description="Specific ways the business makes money (e.g. 'Freemium SaaS at $29/mo for pro tier')",
+    )
+    go_to_market: list[str] = Field(
+        description="Exactly 3 specific channels to acquire the first 100 users",
+    )
+    known_competitors: list[str] = Field(
+        description="Existing alternatives and how this startup differs from each",
+    )
+    tech_stack_recommendation: str = Field(
+        description="Suggested tools, frameworks, and services to build the MVP",
+    )
+
+
+class BusinessModel(BusinessModelBase, table=True):
+    __tablename__ = "business_models"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the business model",
+    )
+    revenue_streams: list[str] = Field(
+        sa_column=Column(JSON),
+        description="Specific ways the business makes money",
+    )
+    go_to_market: list[str] = Field(
+        sa_column=Column(JSON),
+        description="Exactly 3 specific channels to acquire the first 100 users",
+    )
+    known_competitors: list[str] = Field(
+        sa_column=Column(JSON),
+        description="Existing alternatives and how this startup differs from each",
+    )
+    run_id: uuid.UUID = Field(
+        foreign_key="runs.id",
+        description="ID of the pipeline run that generated this business model",
+    )
+    candidate_id: uuid.UUID = Field(
+        foreign_key="candidates.id",
+        description="ID of the candidate this business model expands on",
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the business model was created",
+    )

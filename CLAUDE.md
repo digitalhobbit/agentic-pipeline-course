@@ -49,7 +49,7 @@ Each step reads its own inputs from the database and persists its outputs. Steps
 1. **Fetch** — Retrieve news articles from News API (newsapi.ai, SDK: `eventregistry`), store in database
 2. **Triage** — AI filters articles for business relevance (keep/discard decisions)
 3. **Extraction** — AI extracts business signals and market facts from kept articles
-4. **Synthesis** — AI generates 3 startup candidates from insights (uses ~4-day rolling window, one per archetype: META_TREND, FRICTION_POINT, RABBIT_HOLE)
+4. **Synthesis** — AI generates 3 startup candidates from insights (uses ~2-day rolling window capped at 1000 insights, one per archetype: META_TREND, FRICTION_POINT, RABBIT_HOLE)
 5. **Deep Dive** — Selects best candidate via scoring, AI expands into full business model
 6. **Writer** — AI generates the final newsletter post as markdown
 7. **Visualizer** — AI generates an image prompt and caption for the header image
@@ -193,3 +193,7 @@ When making changes to the codebase:
    - Add the step's model selection to `AIModelFactory` (only if it differs from the Gemini 2.5 Pro default)
 4. **Dependencies**: Use `uv add <package>` to add new dependencies
 5. **Pipeline**: Never run `uv run idea-pipeline run` yourself; suggest to the user to run it instead (incurs API costs and can be slow)
+
+## TODO
+
+- **Revisit Synthesis rolling window**: The Synthesis step currently uses a 2-day window (capped at 1000 insights) as a temporary measure to avoid overwhelming the model with overly verbose insights. Once the terser extraction prompts have been validated over a few runs, revert to a 4-day rolling window and re-evaluate whether the 1000-insight cap is still needed.

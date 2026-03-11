@@ -9,6 +9,8 @@ from sqlmodel import Session
 from idea_pipeline.core.models import (
     Article,
     ArticleInsight,
+    BusinessModel,
+    BusinessModelBase,
     BusinessSignalBase,
     Candidate,
     CandidateArchetype,
@@ -20,6 +22,7 @@ from idea_pipeline.core.settings import settings
 from idea_pipeline.db.repositories import (
     ArticleInsightRepository,
     ArticleRepository,
+    BusinessModelRepository,
     CandidateRepository,
     TriageDecisionRepository,
 )
@@ -194,11 +197,14 @@ ideas. Types:
    - regulatory_change: new rules that may create demand or open markets
    - demographic_trend: population shifts that could create new customer segments
 
-   Each signal needs a short headline, a detailed description, and a signal_type.
+   Each signal needs a short headline (≤10 words), a one-sentence description \
+(≤25 words), and a signal_type. Be extremely concise — capture the core insight, \
+not the background.
 
 2. **Market Facts** — concrete statistics useful for market sizing: revenue \
 figures, growth rates, user counts, or market share percentages. Each fact \
-needs the stat itself and context explaining its relevance.
+needs the stat itself (the number and what it measures, ≤15 words) and brief \
+context (why it matters, ≤15 words).
 
 Returning zero signals and zero facts for an article is fine when nothing \
 relevant is present. Aim for quality over quantity.
@@ -328,14 +334,16 @@ developer, clarity of the pain point, and timing (why now).\
             output_type=SynthesisStep._SynthesisResult,
         )
 
+    _MAX_INSIGHTS = 1000
+
     def load_inputs(
         self, session: Session, run_id: uuid.UUID
     ) -> list[ArticleInsight]:
         cutoff = datetime.now(timezone.utc).replace(
             hour=0, minute=0, second=0, microsecond=0
-        ) - timedelta(days=3)
+        ) - timedelta(days=1)
         repo = ArticleInsightRepository(session)
-        return repo.get_insights_since(cutoff)
+        return repo.get_insights_since(cutoff, limit=self._MAX_INSIGHTS)
 
     async def process(self, inputs: list[ArticleInsight]) -> list[Candidate]:
         if not inputs:
@@ -412,4 +420,122 @@ developer, clarity of the pain point, and timing (why now).\
                             f"  Fact: {fact.stat} — {fact.context}"
                         )
             lines.append("")
+        return "\n".join(lines)
+
+
+class DeepDiveStep(PipelineStep):
+    key = "deep_dive"
+
+    _SYSTEM_PROMPT = """\
+You are a product strategist who turns startup concepts into practical blueprints \
+that a solo developer could actually execute. Your output must be specific and \
+actionable — not generic startup advice.
+
+Rules:
+- **name**: Create a catchy, memorable startup name that hints at what the \
+product does.
+- **value_proposition**: Write a crisp statement of what the product does and \
+why someone would pay for it. Be concrete.
+- **unfair_advantage**: Identify the real moat — network effects, data \
+advantages, switching costs, or unique positioning. If there is no obvious moat, \
+say so honestly and suggest how one could be built.
+- **revenue_streams**: List specific pricing strategies with real numbers \
+(e.g., "Freemium with a $19/mo pro tier" not "subscription model").
+- **go_to_market**: Provide exactly 3 concrete channels to acquire the first \
+100 users. Name specific communities, platforms, or tactics — not generic \
+advice like "social media marketing".
+- **known_competitors**: Name real, existing products or companies. For each, \
+explain how this startup differs. If you don't know specific competitors, \
+describe the category of tool people currently use as a workaround.
+- **tech_stack_recommendation**: Recommend specific frameworks, databases, \
+hosting platforms, and APIs. Optimize for solo-developer speed: pick boring, \
+well-documented technology over cutting-edge tools.\
+"""
+
+    def __init__(self) -> None:
+        factory = AIModelFactory()
+        self._agent: Agent[None, BusinessModelBase] = Agent(
+            factory.get_model(self.key),
+            system_prompt=self._SYSTEM_PROMPT,
+            output_type=BusinessModelBase,
+        )
+
+    def load_inputs(
+        self, session: Session, run_id: uuid.UUID
+    ) -> tuple[Candidate, list[Article]] | None:
+        candidate_repo = CandidateRepository(session)
+        candidate = candidate_repo.get_top_candidate_for_run(run_id)
+        if candidate is None:
+            return None
+
+        article_ids = [uuid.UUID(aid) for aid in candidate.supporting_article_ids]
+        article_repo = ArticleRepository(session)
+        articles = article_repo.get_by_ids(article_ids)
+        return candidate, articles
+
+    async def process(
+        self, inputs: tuple[Candidate, list[Article]] | None
+    ) -> BusinessModel | None:
+        if inputs is None:
+            return None
+
+        candidate, articles = inputs
+        prompt = self._format_prompt(candidate, articles)
+        result = await self._agent.run(prompt)
+        output = result.output
+
+        return BusinessModel(
+            name=output.name,
+            value_proposition=output.value_proposition,
+            unfair_advantage=output.unfair_advantage,
+            revenue_streams=output.revenue_streams,
+            go_to_market=output.go_to_market,
+            known_competitors=output.known_competitors,
+            tech_stack_recommendation=output.tech_stack_recommendation,
+            candidate_id=candidate.id,
+        )
+
+    def persist(
+        self,
+        session: Session,
+        run_id: uuid.UUID,
+        outputs: BusinessModel | None,
+    ) -> int:
+        if outputs is None:
+            return 0
+        outputs.run_id = run_id
+        repo = BusinessModelRepository(session)
+        repo.create(outputs)
+        return 1
+
+    def print_stats(
+        self, outputs: BusinessModel | None, persist_result: int
+    ) -> None:
+        if outputs is None:
+            print("  No candidates to expand")
+            return
+        print(f"  Startup: {outputs.name}")
+        print(f"  Value:   {outputs.value_proposition}")
+
+    def _format_prompt(
+        self, candidate: Candidate, articles: list[Article]
+    ) -> str:
+        lines = [
+            "Expand this startup candidate into a full business model:\n",
+            f"Theme: {candidate.theme}",
+            f"Archetype: {candidate.archetype.value}",
+            f"One-liner: {candidate.one_liner}",
+            f"Why now: {candidate.why_now}",
+            f"Target customer: {candidate.target_customer}",
+            f"Problem: {candidate.problem_to_solve}",
+            f"Solution: {candidate.solution_overview}",
+            f"Score: {candidate.score}/100",
+        ]
+
+        if articles:
+            lines.append("\nSupporting articles for context:")
+            for article in articles:
+                lines.append(f"\n[{article.source}] {article.title}")
+                lines.append(article.body[:2000])
+
         return "\n".join(lines)

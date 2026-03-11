@@ -7,6 +7,7 @@ from sqlmodel import Session, select
 from idea_pipeline.core.models import (
     Article,
     ArticleInsight,
+    BusinessModel,
     Candidate,
     Run,
     RunStatus,
@@ -73,6 +74,12 @@ class ArticleRepository:
         self.session.commit()
         return result.rowcount
 
+    def get_by_ids(self, article_ids: list[uuid.UUID]) -> list[Article]:
+        if not article_ids:
+            return []
+        stmt = select(Article).where(Article.id.in_(article_ids))  # type: ignore[union-attr]
+        return list(self.session.exec(stmt).all())
+
     def get_articles_pending_triage(self) -> list[Article]:
         stmt = select(Article).where(
             Article.id.notin_(  # type: ignore[union-attr]
@@ -118,8 +125,16 @@ class ArticleInsightRepository:
             self.session.refresh(insight)
         return insights
 
-    def get_insights_since(self, cutoff: datetime) -> list[ArticleInsight]:
-        stmt = select(ArticleInsight).where(ArticleInsight.created_at >= cutoff)
+    def get_insights_since(
+        self, cutoff: datetime, limit: int | None = None
+    ) -> list[ArticleInsight]:
+        stmt = (
+            select(ArticleInsight)
+            .where(ArticleInsight.created_at >= cutoff)
+            .order_by(ArticleInsight.created_at.desc())  # type: ignore[union-attr]
+        )
+        if limit is not None:
+            stmt = stmt.limit(limit)
         return list(self.session.exec(stmt).all())
 
 
@@ -134,3 +149,27 @@ class CandidateRepository:
         for candidate in candidates:
             self.session.refresh(candidate)
         return candidates
+
+    def get_top_candidate_for_run(self, run_id: uuid.UUID) -> Candidate | None:
+        stmt = (
+            select(Candidate)
+            .where(Candidate.run_id == run_id)
+            .order_by(Candidate.score.desc())  # type: ignore[union-attr]
+            .limit(1)
+        )
+        return self.session.exec(stmt).first()
+
+
+class BusinessModelRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def create(self, model: BusinessModel) -> BusinessModel:
+        self.session.add(model)
+        self.session.commit()
+        self.session.refresh(model)
+        return model
+
+    def get_by_run_id(self, run_id: uuid.UUID) -> BusinessModel | None:
+        stmt = select(BusinessModel).where(BusinessModel.run_id == run_id)
+        return self.session.exec(stmt).first()
