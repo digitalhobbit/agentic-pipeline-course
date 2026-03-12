@@ -12,6 +12,7 @@ class ScoredCandidate:
     freshness: float
     fatigue: float
     similarity: float
+    max_similarity: float
     final: float
 
 
@@ -76,6 +77,7 @@ def score_candidate(
         freshness=freshness,
         fatigue=fatigue,
         similarity=sim,
+        max_similarity=max_sim,
         final=raw * freshness * fatigue * sim,
     )
 
@@ -105,6 +107,6 @@ def print_selection_ranking(scored: list[ScoredCandidate], limit: int = 20) -> N
             f"    {i:>2}. [{s.candidate.archetype.value:<15}] "
             f"{s.candidate.theme[:50]:<50}  "
             f"raw={s.raw:>3}  fresh={s.freshness:.2f}  "
-            f"fatigue={s.fatigue:.2f}  sim={s.similarity:.2f}  "
+            f"fatigue={s.fatigue:.2f}  sim={s.similarity:.2f} ({s.max_similarity:.3f})  "
             f"final={s.final:.1f}{marker}"
         )
