@@ -99,8 +99,10 @@ def get_max_similarity_to_published(
     )
 
     if (
-        not candidate_result["embeddings"]
-        or not published_result["embeddings"]
+        candidate_result["embeddings"] is None
+        or published_result["embeddings"] is None
+        or len(candidate_result["embeddings"]) == 0
+        or len(published_result["embeddings"]) == 0
     ):
         return {}
 
