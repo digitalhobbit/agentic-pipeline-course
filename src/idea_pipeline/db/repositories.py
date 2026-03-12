@@ -166,6 +166,36 @@ class CandidateRepository:
         )
         return self.session.exec(stmt).first()
 
+    def get_unselected_since(self, cutoff: datetime) -> list[Candidate]:
+        stmt = (
+            select(Candidate)
+            .where(
+                Candidate.selected == False,  # noqa: E712
+                Candidate.created_at >= cutoff,
+            )
+            .order_by(Candidate.created_at.desc())  # type: ignore[union-attr]
+        )
+        return list(self.session.exec(stmt).all())
+
+    def get_recently_published_archetypes(
+        self, limit: int = 3
+    ) -> list["CandidateArchetype"]:
+        stmt = (
+            select(Candidate.archetype)
+            .join(Run, Run.selected_candidate_id == Candidate.id)
+            .order_by(Run.started_at.desc())  # type: ignore[union-attr]
+            .limit(limit)
+        )
+        return list(self.session.exec(stmt).all())
+
+    def mark_selected(self, candidate_id: uuid.UUID) -> None:
+        candidate = self.session.exec(
+            select(Candidate).where(Candidate.id == candidate_id)
+        ).one()
+        candidate.selected = True
+        self.session.add(candidate)
+        self.session.commit()
+
 
 class BusinessModelRepository:
     def __init__(self, session: Session) -> None:

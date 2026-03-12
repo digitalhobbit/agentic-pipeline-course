@@ -30,11 +30,16 @@ from idea_pipeline.db.repositories import (
     BusinessModelRepository,
     CandidateRepository,
     NewsletterPostRepository,
+    RunRepository,
     TriageDecisionRepository,
     VisualConceptRepository,
 )
 from idea_pipeline.pipeline.ai_models import AIModelFactory
 from idea_pipeline.pipeline.base import BatchStep, PipelineStep
+from idea_pipeline.pipeline.selection import (
+    print_selection_ranking,
+    select_best_candidate,
+)
 
 
 MAX_FETCH_PAGES = 10
@@ -470,10 +475,33 @@ well-documented technology over cutting-edge tools.\
     def load_inputs(
         self, session: Session, run_id: uuid.UUID
     ) -> tuple[Candidate, list[Article]] | None:
+        now = datetime.now(timezone.utc)
+        cutoff = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(
+            days=3
+        )
+
         candidate_repo = CandidateRepository(session)
-        candidate = candidate_repo.get_top_candidate_for_run(run_id)
-        if candidate is None:
+        candidates = candidate_repo.get_unselected_since(cutoff)
+        if not candidates:
             return None
+
+        recently_published = candidate_repo.get_recently_published_archetypes()
+        result = select_best_candidate(candidates, now, recently_published)
+        if result is None:
+            return None
+
+        winner, scored = result
+        print_selection_ranking(scored)
+        candidate = winner.candidate
+
+        candidate_repo.mark_selected(candidate.id)
+
+        run_repo = RunRepository(session)
+        run = run_repo.get_by_id(run_id)
+        if run is not None:
+            run.selected_candidate_id = candidate.id
+            session.add(run)
+            session.commit()
 
         article_ids = [uuid.UUID(aid) for aid in candidate.supporting_article_ids]
         article_repo = ArticleRepository(session)
