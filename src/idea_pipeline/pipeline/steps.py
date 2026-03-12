@@ -7,6 +7,10 @@ from pydantic import BaseModel, Field
 from pydantic_ai import Agent, BinaryImage
 from sqlmodel import Session
 
+from idea_pipeline.core.embeddings import (
+    get_max_similarity_to_published,
+    store_candidate_embeddings,
+)
 from idea_pipeline.core.models import (
     Article,
     ArticleInsight,
@@ -379,6 +383,15 @@ developer, clarity of the pain point, and timing (why now).\
                     supporting_article_ids=c.supporting_article_ids,
                 )
             )
+
+        if candidates:
+            await store_candidate_embeddings(
+                candidate_ids=[c.id for c in candidates],
+                texts=[
+                    f"{c.one_liner} {c.solution_overview}" for c in candidates
+                ],
+            )
+
         return candidates
 
     def persist(
@@ -486,7 +499,18 @@ well-documented technology over cutting-edge tools.\
             return None
 
         recently_published = candidate_repo.get_recently_published_archetypes()
-        result = select_best_candidate(candidates, now, recently_published)
+
+        published_ids = candidate_repo.get_published_candidate_ids_since(
+            now - timedelta(days=60)
+        )
+        similarity_scores = get_max_similarity_to_published(
+            candidate_ids=[c.id for c in candidates],
+            published_ids=published_ids,
+        )
+
+        result = select_best_candidate(
+            candidates, now, recently_published, similarity_scores
+        )
         if result is None:
             return None
 

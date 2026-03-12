@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 
@@ -10,6 +11,7 @@ class ScoredCandidate:
     raw: int
     freshness: float
     fatigue: float
+    similarity: float
     final: float
 
 
@@ -29,6 +31,20 @@ def freshness_multiplier(candidate_created_at: datetime, now: datetime) -> float
         return 0.90
 
 
+SIMILARITY_SAFE_THRESHOLD = 0.7
+SIMILARITY_KILL_THRESHOLD = 0.85
+
+
+def similarity_multiplier(max_similarity: float) -> float:
+    if max_similarity < SIMILARITY_SAFE_THRESHOLD:
+        return 1.0
+    elif max_similarity >= SIMILARITY_KILL_THRESHOLD:
+        return 0.0
+    else:
+        danger_range = SIMILARITY_KILL_THRESHOLD - SIMILARITY_SAFE_THRESHOLD
+        return 1.0 - (max_similarity - SIMILARITY_SAFE_THRESHOLD) / danger_range
+
+
 def archetype_fatigue_multiplier(
     archetype: CandidateArchetype,
     recently_published: list[CandidateArchetype],
@@ -45,18 +61,22 @@ def score_candidate(
     candidate: Candidate,
     now: datetime,
     recently_published_archetypes: list[CandidateArchetype],
+    similarity_scores: dict[uuid.UUID, float] | None = None,
 ) -> ScoredCandidate:
     raw = candidate.score
     freshness = freshness_multiplier(candidate.created_at, now)
     fatigue = archetype_fatigue_multiplier(
         candidate.archetype, recently_published_archetypes
     )
+    max_sim = (similarity_scores or {}).get(candidate.id, 0.0)
+    sim = similarity_multiplier(max_sim)
     return ScoredCandidate(
         candidate=candidate,
         raw=raw,
         freshness=freshness,
         fatigue=fatigue,
-        final=raw * freshness * fatigue,
+        similarity=sim,
+        final=raw * freshness * fatigue * sim,
     )
 
 
@@ -64,12 +84,13 @@ def select_best_candidate(
     candidates: list[Candidate],
     now: datetime,
     recently_published_archetypes: list[CandidateArchetype],
+    similarity_scores: dict[uuid.UUID, float] | None = None,
 ) -> tuple[ScoredCandidate, list[ScoredCandidate]] | None:
     """Returns (winner, all_scored_sorted) or None if no candidates."""
     if not candidates:
         return None
     scored = [
-        score_candidate(c, now, recently_published_archetypes)
+        score_candidate(c, now, recently_published_archetypes, similarity_scores)
         for c in candidates
     ]
     scored.sort(key=lambda s: s.final, reverse=True)
@@ -84,5 +105,6 @@ def print_selection_ranking(scored: list[ScoredCandidate], limit: int = 20) -> N
             f"    {i:>2}. [{s.candidate.archetype.value:<15}] "
             f"{s.candidate.theme[:50]:<50}  "
             f"raw={s.raw:>3}  fresh={s.freshness:.2f}  "
-            f"fatigue={s.fatigue:.2f}  final={s.final:.1f}{marker}"
+            f"fatigue={s.fatigue:.2f}  sim={s.similarity:.2f}  "
+            f"final={s.final:.1f}{marker}"
         )

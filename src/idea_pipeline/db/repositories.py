@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.dialects.sqlite import insert
 from sqlmodel import Session, select
@@ -185,6 +185,16 @@ class CandidateRepository:
             .join(Run, Run.selected_candidate_id == Candidate.id)
             .order_by(Run.started_at.desc())  # type: ignore[union-attr]
             .limit(limit)
+        )
+        return list(self.session.exec(stmt).all())
+
+    def get_published_candidate_ids_since(
+        self, cutoff: datetime
+    ) -> list[uuid.UUID]:
+        stmt = (
+            select(Candidate.id)
+            .join(Run, Run.selected_candidate_id == Candidate.id)
+            .where(Run.started_at >= cutoff)
         )
         return list(self.session.exec(stmt).all())
 

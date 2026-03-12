@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     gemini_api_key: str = Field(default="")
 
     db_path: Path = Field(default=Path("data/idea_pipeline.db"))
+    chroma_path: Path = Field(default=Path("data/chroma"))
 
 
 settings = Settings()
