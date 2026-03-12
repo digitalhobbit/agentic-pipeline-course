@@ -31,8 +31,8 @@ def freshness_multiplier(candidate_created_at: datetime, now: datetime) -> float
         return 0.90
 
 
-SIMILARITY_SAFE_THRESHOLD = 0.7
-SIMILARITY_KILL_THRESHOLD = 0.85
+SIMILARITY_SAFE_THRESHOLD = 0.87
+SIMILARITY_KILL_THRESHOLD = 0.95
 
 
 def similarity_multiplier(max_similarity: float) -> float:

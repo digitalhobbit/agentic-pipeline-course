@@ -1,0 +1,767 @@
+{
+  "candidates": [
+    {
+      "id": "alpha",
+      "label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "group": "alpha",
+      "relation": "origin"
+    },
+    {
+      "id": "alpha_rephrase",
+      "label": "Alpha Rephrase \u2014 same idea, different words",
+      "group": "alpha",
+      "relation": "near_duplicate"
+    },
+    {
+      "id": "alpha_similar_problem",
+      "label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "group": "alpha",
+      "relation": "similar_problem_different_solution"
+    },
+    {
+      "id": "alpha_similar_space",
+      "label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "group": "alpha",
+      "relation": "same_space_different_problem"
+    },
+    {
+      "id": "alpha_different",
+      "label": "Alpha Different \u2014 completely unrelated idea",
+      "group": "alpha",
+      "relation": "completely_different"
+    },
+    {
+      "id": "beta",
+      "label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "group": "beta",
+      "relation": "origin"
+    },
+    {
+      "id": "beta_rephrase",
+      "label": "Beta Rephrase \u2014 same idea, different words",
+      "group": "beta",
+      "relation": "near_duplicate"
+    },
+    {
+      "id": "beta_similar_problem",
+      "label": "Beta Similar Problem \u2014 pet health but different approach",
+      "group": "beta",
+      "relation": "similar_problem_different_solution"
+    },
+    {
+      "id": "beta_similar_space",
+      "label": "Beta Similar Space \u2014 pet industry but different problem",
+      "group": "beta",
+      "relation": "same_space_different_problem"
+    },
+    {
+      "id": "beta_different",
+      "label": "Beta Different \u2014 completely unrelated idea",
+      "group": "beta",
+      "relation": "completely_different"
+    },
+    {
+      "id": "cross_alpha_beta_blend",
+      "label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "group": "cross",
+      "relation": "blend"
+    }
+  ],
+  "similarity_matrix": {
+    "alpha": {
+      "alpha": 1.0,
+      "alpha_rephrase": 0.941024,
+      "alpha_similar_problem": 0.876303,
+      "alpha_similar_space": 0.868964,
+      "alpha_different": 0.782844,
+      "beta": 0.786698,
+      "beta_rephrase": 0.77364,
+      "beta_similar_problem": 0.78793,
+      "beta_similar_space": 0.791678,
+      "beta_different": 0.827538,
+      "cross_alpha_beta_blend": 0.845245
+    },
+    "alpha_rephrase": {
+      "alpha": 0.941024,
+      "alpha_rephrase": 1.0,
+      "alpha_similar_problem": 0.861821,
+      "alpha_similar_space": 0.842028,
+      "alpha_different": 0.791101,
+      "beta": 0.780945,
+      "beta_rephrase": 0.77327,
+      "beta_similar_problem": 0.774797,
+      "beta_similar_space": 0.801633,
+      "beta_different": 0.810792,
+      "cross_alpha_beta_blend": 0.82885
+    },
+    "alpha_similar_problem": {
+      "alpha": 0.876303,
+      "alpha_rephrase": 0.861821,
+      "alpha_similar_problem": 1.0,
+      "alpha_similar_space": 0.84652,
+      "alpha_different": 0.74401,
+      "beta": 0.774674,
+      "beta_rephrase": 0.776503,
+      "beta_similar_problem": 0.790653,
+      "beta_similar_space": 0.7661,
+      "beta_different": 0.820305,
+      "cross_alpha_beta_blend": 0.832005
+    },
+    "alpha_similar_space": {
+      "alpha": 0.868964,
+      "alpha_rephrase": 0.842028,
+      "alpha_similar_problem": 0.84652,
+      "alpha_similar_space": 1.0,
+      "alpha_different": 0.789329,
+      "beta": 0.781604,
+      "beta_rephrase": 0.768447,
+      "beta_similar_problem": 0.802513,
+      "beta_similar_space": 0.784083,
+      "beta_different": 0.826542,
+      "cross_alpha_beta_blend": 0.819977
+    },
+    "alpha_different": {
+      "alpha": 0.782844,
+      "alpha_rephrase": 0.791101,
+      "alpha_similar_problem": 0.74401,
+      "alpha_similar_space": 0.789329,
+      "alpha_different": 1.0,
+      "beta": 0.808297,
+      "beta_rephrase": 0.775518,
+      "beta_similar_problem": 0.806409,
+      "beta_similar_space": 0.803115,
+      "beta_different": 0.769374,
+      "cross_alpha_beta_blend": 0.778438
+    },
+    "beta": {
+      "alpha": 0.786698,
+      "alpha_rephrase": 0.780945,
+      "alpha_similar_problem": 0.774674,
+      "alpha_similar_space": 0.781604,
+      "alpha_different": 0.808297,
+      "beta": 1.0,
+      "beta_rephrase": 0.959354,
+      "beta_similar_problem": 0.866328,
+      "beta_similar_space": 0.826821,
+      "beta_different": 0.777787,
+      "cross_alpha_beta_blend": 0.865094
+    },
+    "beta_rephrase": {
+      "alpha": 0.77364,
+      "alpha_rephrase": 0.77327,
+      "alpha_similar_problem": 0.776503,
+      "alpha_similar_space": 0.768447,
+      "alpha_different": 0.775518,
+      "beta": 0.959354,
+      "beta_rephrase": 1.0,
+      "beta_similar_problem": 0.874882,
+      "beta_similar_space": 0.810693,
+      "beta_different": 0.771009,
+      "cross_alpha_beta_blend": 0.847351
+    },
+    "beta_similar_problem": {
+      "alpha": 0.78793,
+      "alpha_rephrase": 0.774797,
+      "alpha_similar_problem": 0.790653,
+      "alpha_similar_space": 0.802513,
+      "alpha_different": 0.806409,
+      "beta": 0.866328,
+      "beta_rephrase": 0.874882,
+      "beta_similar_problem": 1.0,
+      "beta_similar_space": 0.830256,
+      "beta_different": 0.790764,
+      "cross_alpha_beta_blend": 0.834858
+    },
+    "beta_similar_space": {
+      "alpha": 0.791678,
+      "alpha_rephrase": 0.801633,
+      "alpha_similar_problem": 0.7661,
+      "alpha_similar_space": 0.784083,
+      "alpha_different": 0.803115,
+      "beta": 0.826821,
+      "beta_rephrase": 0.810693,
+      "beta_similar_problem": 0.830256,
+      "beta_similar_space": 1.0,
+      "beta_different": 0.759797,
+      "cross_alpha_beta_blend": 0.815455
+    },
+    "beta_different": {
+      "alpha": 0.827538,
+      "alpha_rephrase": 0.810792,
+      "alpha_similar_problem": 0.820305,
+      "alpha_similar_space": 0.826542,
+      "alpha_different": 0.769374,
+      "beta": 0.777787,
+      "beta_rephrase": 0.771009,
+      "beta_similar_problem": 0.790764,
+      "beta_similar_space": 0.759797,
+      "beta_different": 1.0,
+      "cross_alpha_beta_blend": 0.819031
+    },
+    "cross_alpha_beta_blend": {
+      "alpha": 0.845245,
+      "alpha_rephrase": 0.82885,
+      "alpha_similar_problem": 0.832005,
+      "alpha_similar_space": 0.819977,
+      "alpha_different": 0.778438,
+      "beta": 0.865094,
+      "beta_rephrase": 0.847351,
+      "beta_similar_problem": 0.834858,
+      "beta_similar_space": 0.815455,
+      "beta_different": 0.819031,
+      "cross_alpha_beta_blend": 1.0
+    }
+  },
+  "pairs_ranked": [
+    {
+      "a": "beta",
+      "a_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "b": "beta_rephrase",
+      "b_label": "Beta Rephrase \u2014 same idea, different words",
+      "same_group": true,
+      "relation_a": "origin",
+      "relation_b": "near_duplicate",
+      "similarity": 0.959354
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "alpha_rephrase",
+      "b_label": "Alpha Rephrase \u2014 same idea, different words",
+      "same_group": true,
+      "relation_a": "origin",
+      "relation_b": "near_duplicate",
+      "similarity": 0.941024
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "alpha_similar_problem",
+      "b_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "same_group": true,
+      "relation_a": "origin",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.876303
+    },
+    {
+      "a": "beta_rephrase",
+      "a_label": "Beta Rephrase \u2014 same idea, different words",
+      "b": "beta_similar_problem",
+      "b_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "same_group": true,
+      "relation_a": "near_duplicate",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.874882
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "alpha_similar_space",
+      "b_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "same_group": true,
+      "relation_a": "origin",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.868964
+    },
+    {
+      "a": "beta",
+      "a_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "b": "beta_similar_problem",
+      "b_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "same_group": true,
+      "relation_a": "origin",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.866328
+    },
+    {
+      "a": "beta",
+      "a_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "origin",
+      "relation_b": "blend",
+      "similarity": 0.865094
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "alpha_similar_problem",
+      "b_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "same_group": true,
+      "relation_a": "near_duplicate",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.861821
+    },
+    {
+      "a": "beta_rephrase",
+      "a_label": "Beta Rephrase \u2014 same idea, different words",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "near_duplicate",
+      "relation_b": "blend",
+      "similarity": 0.847351
+    },
+    {
+      "a": "alpha_similar_problem",
+      "a_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "b": "alpha_similar_space",
+      "b_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "same_group": true,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.84652
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "origin",
+      "relation_b": "blend",
+      "similarity": 0.845245
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "alpha_similar_space",
+      "b_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "same_group": true,
+      "relation_a": "near_duplicate",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.842028
+    },
+    {
+      "a": "beta_similar_problem",
+      "a_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "blend",
+      "similarity": 0.834858
+    },
+    {
+      "a": "alpha_similar_problem",
+      "a_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "blend",
+      "similarity": 0.832005
+    },
+    {
+      "a": "beta_similar_problem",
+      "a_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "b": "beta_similar_space",
+      "b_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "same_group": true,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.830256
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "near_duplicate",
+      "relation_b": "blend",
+      "similarity": 0.82885
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": false,
+      "relation_a": "origin",
+      "relation_b": "completely_different",
+      "similarity": 0.827538
+    },
+    {
+      "a": "beta",
+      "a_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "b": "beta_similar_space",
+      "b_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "same_group": true,
+      "relation_a": "origin",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.826821
+    },
+    {
+      "a": "alpha_similar_space",
+      "a_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": false,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "completely_different",
+      "similarity": 0.826542
+    },
+    {
+      "a": "alpha_similar_problem",
+      "a_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": false,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "completely_different",
+      "similarity": 0.820305
+    },
+    {
+      "a": "alpha_similar_space",
+      "a_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "blend",
+      "similarity": 0.819977
+    },
+    {
+      "a": "beta_different",
+      "a_label": "Beta Different \u2014 completely unrelated idea",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "completely_different",
+      "relation_b": "blend",
+      "similarity": 0.819031
+    },
+    {
+      "a": "beta_similar_space",
+      "a_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "blend",
+      "similarity": 0.815455
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": false,
+      "relation_a": "near_duplicate",
+      "relation_b": "completely_different",
+      "similarity": 0.810792
+    },
+    {
+      "a": "beta_rephrase",
+      "a_label": "Beta Rephrase \u2014 same idea, different words",
+      "b": "beta_similar_space",
+      "b_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "same_group": true,
+      "relation_a": "near_duplicate",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.810693
+    },
+    {
+      "a": "alpha_different",
+      "a_label": "Alpha Different \u2014 completely unrelated idea",
+      "b": "beta",
+      "b_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "same_group": false,
+      "relation_a": "completely_different",
+      "relation_b": "origin",
+      "similarity": 0.808297
+    },
+    {
+      "a": "alpha_different",
+      "a_label": "Alpha Different \u2014 completely unrelated idea",
+      "b": "beta_similar_problem",
+      "b_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "same_group": false,
+      "relation_a": "completely_different",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.806409
+    },
+    {
+      "a": "alpha_different",
+      "a_label": "Alpha Different \u2014 completely unrelated idea",
+      "b": "beta_similar_space",
+      "b_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "same_group": false,
+      "relation_a": "completely_different",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.803115
+    },
+    {
+      "a": "alpha_similar_space",
+      "a_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "b": "beta_similar_problem",
+      "b_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "same_group": false,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.802513
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "beta_similar_space",
+      "b_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "same_group": false,
+      "relation_a": "near_duplicate",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.801633
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "beta_similar_space",
+      "b_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "same_group": false,
+      "relation_a": "origin",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.791678
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "alpha_different",
+      "b_label": "Alpha Different \u2014 completely unrelated idea",
+      "same_group": true,
+      "relation_a": "near_duplicate",
+      "relation_b": "completely_different",
+      "similarity": 0.791101
+    },
+    {
+      "a": "beta_similar_problem",
+      "a_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": true,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "completely_different",
+      "similarity": 0.790764
+    },
+    {
+      "a": "alpha_similar_problem",
+      "a_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "b": "beta_similar_problem",
+      "b_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "same_group": false,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.790653
+    },
+    {
+      "a": "alpha_similar_space",
+      "a_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "b": "alpha_different",
+      "b_label": "Alpha Different \u2014 completely unrelated idea",
+      "same_group": true,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "completely_different",
+      "similarity": 0.789329
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "beta_similar_problem",
+      "b_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "same_group": false,
+      "relation_a": "origin",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.78793
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "beta",
+      "b_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "same_group": false,
+      "relation_a": "origin",
+      "relation_b": "origin",
+      "similarity": 0.786698
+    },
+    {
+      "a": "alpha_similar_space",
+      "a_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "b": "beta_similar_space",
+      "b_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "same_group": false,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.784083
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "alpha_different",
+      "b_label": "Alpha Different \u2014 completely unrelated idea",
+      "same_group": true,
+      "relation_a": "origin",
+      "relation_b": "completely_different",
+      "similarity": 0.782844
+    },
+    {
+      "a": "alpha_similar_space",
+      "a_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "b": "beta",
+      "b_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "same_group": false,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "origin",
+      "similarity": 0.781604
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "beta",
+      "b_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "same_group": false,
+      "relation_a": "near_duplicate",
+      "relation_b": "origin",
+      "similarity": 0.780945
+    },
+    {
+      "a": "alpha_different",
+      "a_label": "Alpha Different \u2014 completely unrelated idea",
+      "b": "cross_alpha_beta_blend",
+      "b_label": "Cross Blend \u2014 elements of both Alpha and Beta spaces",
+      "same_group": false,
+      "relation_a": "completely_different",
+      "relation_b": "blend",
+      "similarity": 0.778438
+    },
+    {
+      "a": "beta",
+      "a_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": true,
+      "relation_a": "origin",
+      "relation_b": "completely_different",
+      "similarity": 0.777787
+    },
+    {
+      "a": "alpha_similar_problem",
+      "a_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "b": "beta_rephrase",
+      "b_label": "Beta Rephrase \u2014 same idea, different words",
+      "same_group": false,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "near_duplicate",
+      "similarity": 0.776503
+    },
+    {
+      "a": "alpha_different",
+      "a_label": "Alpha Different \u2014 completely unrelated idea",
+      "b": "beta_rephrase",
+      "b_label": "Beta Rephrase \u2014 same idea, different words",
+      "same_group": false,
+      "relation_a": "completely_different",
+      "relation_b": "near_duplicate",
+      "similarity": 0.775518
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "beta_similar_problem",
+      "b_label": "Beta Similar Problem \u2014 pet health but different approach",
+      "same_group": false,
+      "relation_a": "near_duplicate",
+      "relation_b": "similar_problem_different_solution",
+      "similarity": 0.774797
+    },
+    {
+      "a": "alpha_similar_problem",
+      "a_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "b": "beta",
+      "b_label": "Beta \u2014 Consumer pet nutrition DTC brand",
+      "same_group": false,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "origin",
+      "similarity": 0.774674
+    },
+    {
+      "a": "alpha",
+      "a_label": "Alpha \u2014 B2B supply chain visibility SaaS",
+      "b": "beta_rephrase",
+      "b_label": "Beta Rephrase \u2014 same idea, different words",
+      "same_group": false,
+      "relation_a": "origin",
+      "relation_b": "near_duplicate",
+      "similarity": 0.77364
+    },
+    {
+      "a": "alpha_rephrase",
+      "a_label": "Alpha Rephrase \u2014 same idea, different words",
+      "b": "beta_rephrase",
+      "b_label": "Beta Rephrase \u2014 same idea, different words",
+      "same_group": false,
+      "relation_a": "near_duplicate",
+      "relation_b": "near_duplicate",
+      "similarity": 0.77327
+    },
+    {
+      "a": "beta_rephrase",
+      "a_label": "Beta Rephrase \u2014 same idea, different words",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": true,
+      "relation_a": "near_duplicate",
+      "relation_b": "completely_different",
+      "similarity": 0.771009
+    },
+    {
+      "a": "alpha_different",
+      "a_label": "Alpha Different \u2014 completely unrelated idea",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": false,
+      "relation_a": "completely_different",
+      "relation_b": "completely_different",
+      "similarity": 0.769374
+    },
+    {
+      "a": "alpha_similar_space",
+      "a_label": "Alpha Similar Space \u2014 manufacturing SaaS but different problem",
+      "b": "beta_rephrase",
+      "b_label": "Beta Rephrase \u2014 same idea, different words",
+      "same_group": false,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "near_duplicate",
+      "similarity": 0.768447
+    },
+    {
+      "a": "alpha_similar_problem",
+      "a_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "b": "beta_similar_space",
+      "b_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "same_group": false,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "same_space_different_problem",
+      "similarity": 0.7661
+    },
+    {
+      "a": "beta_similar_space",
+      "a_label": "Beta Similar Space \u2014 pet industry but different problem",
+      "b": "beta_different",
+      "b_label": "Beta Different \u2014 completely unrelated idea",
+      "same_group": true,
+      "relation_a": "same_space_different_problem",
+      "relation_b": "completely_different",
+      "similarity": 0.759797
+    },
+    {
+      "a": "alpha_similar_problem",
+      "a_label": "Alpha Similar Problem \u2014 supply chain resilience via different approach",
+      "b": "alpha_different",
+      "b_label": "Alpha Different \u2014 completely unrelated idea",
+      "same_group": true,
+      "relation_a": "similar_problem_different_solution",
+      "relation_b": "completely_different",
+      "similarity": 0.74401
+    }
+  ]
+}

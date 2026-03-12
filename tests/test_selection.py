@@ -146,29 +146,29 @@ class TestSimilarityMultiplier:
     def test_below_safe_zone(self):
         assert similarity_multiplier(0.0) == 1.0
         assert similarity_multiplier(0.5) == 1.0
-        assert similarity_multiplier(0.69) == 1.0
+        assert similarity_multiplier(0.86) == 1.0
 
     def test_at_safe_zone_boundary(self):
-        assert similarity_multiplier(0.7) == pytest.approx(1.0)
+        assert similarity_multiplier(0.87) == pytest.approx(1.0)
 
     def test_linear_midpoint(self):
-        # Midpoint of 0.7–0.85 is 0.775 → penalty = (0.775 - 0.7) / 0.15 = 0.5
-        assert similarity_multiplier(0.775) == pytest.approx(0.5)
+        # Midpoint of 0.87–0.95 is 0.91 → penalty = (0.91 - 0.87) / 0.08 = 0.5
+        assert similarity_multiplier(0.91) == pytest.approx(0.5)
 
     def test_linear_quarter(self):
-        # 0.7375 → penalty = (0.7375 - 0.7) / 0.15 = 0.25
-        assert similarity_multiplier(0.7375) == pytest.approx(0.75)
+        # 0.89 → penalty = (0.89 - 0.87) / 0.08 = 0.25
+        assert similarity_multiplier(0.89) == pytest.approx(0.75)
 
     def test_just_below_kill_zone(self):
-        assert similarity_multiplier(0.849) == pytest.approx(
-            1.0 - (0.849 - 0.7) / 0.15
+        assert similarity_multiplier(0.949) == pytest.approx(
+            1.0 - (0.949 - 0.87) / 0.08
         )
 
     def test_at_kill_zone_boundary(self):
-        assert similarity_multiplier(0.85) == 0.0
+        assert similarity_multiplier(0.95) == 0.0
 
     def test_above_kill_zone(self):
-        assert similarity_multiplier(0.9) == 0.0
+        assert similarity_multiplier(0.97) == 0.0
         assert similarity_multiplier(1.0) == 0.0
 
 
@@ -206,8 +206,8 @@ class TestScoreCandidate:
     def test_applies_similarity_penalty(self):
         now = datetime(2026, 3, 12, 14, 0, tzinfo=timezone.utc)
         candidate = _make_candidate(score=80, created_at=now - timedelta(hours=5))
-        # 0.775 similarity → 0.5 multiplier
-        scores = {candidate.id: 0.775}
+        # 0.91 similarity → 0.5 multiplier (midpoint of 0.87–0.95)
+        scores = {candidate.id: 0.91}
         result = score_candidate(candidate, now, [], scores)
         assert result.final == pytest.approx(40.0)  # 80 * 1.0 * 1.0 * 0.5
         assert result.similarity == pytest.approx(0.5)
@@ -215,7 +215,7 @@ class TestScoreCandidate:
     def test_similarity_hard_veto(self):
         now = datetime(2026, 3, 12, 14, 0, tzinfo=timezone.utc)
         candidate = _make_candidate(score=100, created_at=now)
-        scores = {candidate.id: 0.9}
+        scores = {candidate.id: 0.96}
         result = score_candidate(candidate, now, [], scores)
         assert result.final == 0.0
         assert result.similarity == 0.0

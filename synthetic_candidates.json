@@ -1,0 +1,92 @@
+[
+  {
+    "id": "alpha",
+    "label": "Alpha — B2B supply chain visibility SaaS",
+    "group": "alpha",
+    "relation": "origin",
+    "one_liner": "Real-time supply chain visibility platform that helps mid-market manufacturers predict and prevent disruptions before they cascade.",
+    "solution_overview": "A SaaS dashboard that ingests data from ERPs, logistics providers, and public risk feeds to build a live dependency graph of a manufacturer's supply chain. Machine learning models score each node for disruption risk, and automated alerts notify procurement teams when a tier-2 or tier-3 supplier shows early warning signs — allowing them to qualify alternates weeks before a shortage hits."
+  },
+  {
+    "id": "alpha_rephrase",
+    "label": "Alpha Rephrase — same idea, different words",
+    "group": "alpha",
+    "relation": "near_duplicate",
+    "one_liner": "Predictive supply-chain monitoring tool for mid-size manufacturers to spot disruptions early and avoid costly stockouts.",
+    "solution_overview": "Cloud-based software that connects to existing ERP and logistics systems, maps the full supplier network including sub-tier vendors, and uses ML-driven risk scoring to flag potential bottlenecks. Procurement teams receive proactive notifications so they can source alternatives before a disruption materializes."
+  },
+  {
+    "id": "alpha_similar_problem",
+    "label": "Alpha Similar Problem — supply chain resilience via different approach",
+    "group": "alpha",
+    "relation": "similar_problem_different_solution",
+    "one_liner": "On-demand supplier marketplace that lets manufacturers instantly find and onboard vetted backup suppliers when their primary source fails.",
+    "solution_overview": "A two-sided marketplace pre-loaded with quality-audited component suppliers across major manufacturing verticals. When a buyer's existing supplier misses a delivery or signals trouble, the platform matches them with a pre-vetted alternative who can fulfill the order on short notice, handling compliance docs and purchase-order orchestration automatically."
+  },
+  {
+    "id": "alpha_similar_space",
+    "label": "Alpha Similar Space — manufacturing SaaS but different problem",
+    "group": "alpha",
+    "relation": "same_space_different_problem",
+    "one_liner": "AI-powered quality inspection platform that replaces manual visual checks on factory production lines with real-time defect detection.",
+    "solution_overview": "Edge-deployed computer vision system that watches products moving along conveyor belts using existing factory cameras. Deep learning models trained on a manufacturer's own defect library flag anomalies in real time, divert faulty items automatically, and generate root-cause reports so process engineers can fix upstream issues faster."
+  },
+  {
+    "id": "alpha_different",
+    "label": "Alpha Different — completely unrelated idea",
+    "group": "alpha",
+    "relation": "completely_different",
+    "one_liner": "Personalized sleep coaching app that combines wearable data with cognitive behavioral therapy techniques to cure chronic insomnia without medication.",
+    "solution_overview": "A mobile app that syncs with popular wearables to track sleep stages, heart-rate variability, and daytime activity. An AI coach delivers a personalized CBT-I program — adjusting bedtime windows, relaxation exercises, and stimulus-control instructions week by week based on the user's actual sleep data. Progress dashboards and streak mechanics keep users engaged through the typical 6-week treatment course."
+  },
+
+  {
+    "id": "beta",
+    "label": "Beta — Consumer pet nutrition DTC brand",
+    "group": "beta",
+    "relation": "origin",
+    "one_liner": "Personalized fresh dog food subscription that formulates recipes based on each dog's breed, age, weight, allergies, and activity level.",
+    "solution_overview": "Customers complete a detailed pet profile quiz; a proprietary nutrition algorithm selects from a library of vet-designed recipes and calculates exact portion sizes. Meals are cooked in a centralized kitchen using human-grade ingredients, flash-frozen, and shipped on a recurring schedule. An app tracks the dog's weight and energy, adjusting future shipments automatically."
+  },
+  {
+    "id": "beta_rephrase",
+    "label": "Beta Rephrase — same idea, different words",
+    "group": "beta",
+    "relation": "near_duplicate",
+    "one_liner": "Custom-portioned fresh meal delivery for dogs, tailored to breed-specific nutritional needs and dietary restrictions.",
+    "solution_overview": "Pet owners fill out an online questionnaire about their dog's health, size, and preferences. A nutrition engine matches the dog to pre-formulated fresh recipes made with real, human-grade meat and vegetables in a commercial kitchen. Portioned packs are frozen and delivered to the door on a subscription cadence, with ongoing adjustments driven by owner-reported health metrics."
+  },
+  {
+    "id": "beta_similar_problem",
+    "label": "Beta Similar Problem — pet health but different approach",
+    "group": "beta",
+    "relation": "similar_problem_different_solution",
+    "one_liner": "AI veterinary telehealth platform that gives dog owners instant nutrition and wellness advice from licensed vets via video chat.",
+    "solution_overview": "A mobile-first telehealth service connecting pet owners with on-demand licensed veterinarians. Owners describe symptoms or upload photos; vets provide personalized diet plans, supplement recommendations, and wellness check-ups via video. The platform integrates with pet food delivery partners so recommended diets can be ordered in one tap."
+  },
+  {
+    "id": "beta_similar_space",
+    "label": "Beta Similar Space — pet industry but different problem",
+    "group": "beta",
+    "relation": "same_space_different_problem",
+    "one_liner": "Smart GPS dog collar with real-time location tracking, activity monitoring, and geofence escape alerts for anxious pet parents.",
+    "solution_overview": "A lightweight, waterproof collar with built-in GPS, accelerometer, and cellular modem. A companion app shows the dog's live location on a map, logs daily walks and play sessions, and sends instant push notifications if the dog leaves a user-defined safe zone. Monthly cellular plans keep the collar connected without needing the owner's phone nearby."
+  },
+  {
+    "id": "beta_different",
+    "label": "Beta Different — completely unrelated idea",
+    "group": "beta",
+    "relation": "completely_different",
+    "one_liner": "B2B API platform that automates commercial real estate lease abstraction, extracting key terms from PDF leases in seconds instead of hours.",
+    "solution_overview": "An API-first service where property managers and lenders upload commercial lease PDFs. NLP models extract critical data points — rent escalations, renewal options, tenant improvement allowances, co-tenancy clauses — and return structured JSON. A review UI highlights low-confidence extractions for human verification, and integrations push clean data into Yardi, MRI, or custom systems."
+  },
+
+  {
+    "id": "cross_alpha_beta_blend",
+    "label": "Cross Blend — elements of both Alpha and Beta spaces",
+    "group": "cross",
+    "relation": "blend",
+    "one_liner": "Supply-chain traceability platform for premium pet food brands that proves ingredient sourcing and freshness claims to skeptical consumers.",
+    "solution_overview": "A blockchain-backed traceability layer that pet food brands embed into their packaging via QR codes. Scanning a code shows the consumer exactly which farm supplied the chicken, when it was processed, and cold-chain temperature logs from kitchen to doorstep. The B2B side gives brands a dashboard to manage supplier certifications and automate recall workflows."
+  }
+]
