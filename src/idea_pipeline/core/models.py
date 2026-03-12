@@ -42,6 +42,11 @@ class Run(SQLModel, table=True):
         default=None,
         description="Key of the last successfully completed pipeline step, used for resumability",
     )
+    selected_candidate_id: uuid.UUID | None = Field(
+        default=None,
+        foreign_key="candidates.id",
+        description="ID of the candidate selected for deep dive in this run",
+    )
 
 
 class ArticleBase(SQLModel):
@@ -227,6 +232,10 @@ class Candidate(CandidateBase, table=True):
     run_id: uuid.UUID = Field(
         foreign_key="runs.id",
         description="ID of the pipeline run that generated this candidate",
+    )
+    selected: bool = Field(
+        default=False,
+        description="Whether this candidate was selected for deep dive",
     )
     created_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc),
