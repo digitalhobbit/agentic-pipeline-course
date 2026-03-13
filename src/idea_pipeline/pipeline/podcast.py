@@ -1,6 +1,9 @@
+import subprocess
 import uuid
 from pathlib import Path
 
+from google import genai
+from google.genai import types
 from pydantic import BaseModel
 from pydantic_ai import Agent
 from sqlmodel import Session
@@ -11,6 +14,7 @@ from idea_pipeline.core.models import (
     NewsletterPost,
     Podcast,
 )
+from idea_pipeline.core.settings import settings
 from idea_pipeline.db.repositories import (
     BusinessModelRepository,
     CandidateRepository,
@@ -19,6 +23,21 @@ from idea_pipeline.db.repositories import (
 )
 from idea_pipeline.pipeline.ai_models import AIModelFactory
 from idea_pipeline.pipeline.base import PipelineStep
+
+_TTS_MODEL = "gemini-2.5-flash-preview-tts"
+_PCM_SAMPLE_RATE = 24000
+_PCM_CHANNELS = 1
+
+_AUDIO_PREAMBLE = """\
+This is an episode of "Idea Pipeline", a daily startup-ideas podcast.
+The episode features two hosts in natural conversation:
+
+Ryan speaks with an energetic American accent. He is fast-talking and \
+enthusiastic, building momentum as he speaks.
+
+Priya speaks with a crisp British accent. She is measured and deliberate, \
+with dry wit and well-timed pauses.\
+"""
 
 # Average conversational speaking pace used to estimate audio duration
 _WORDS_PER_SECOND = 135 / 60
@@ -185,3 +204,91 @@ vetted the idea; the podcast's job is to make it feel exciting and inevitable.\
             "## Newsletter (for tone and framing reference)",
             post.markdown_content,
         ])
+
+
+class PodcastAudioStep(PipelineStep):
+    key = "podcast_audio"
+
+    def __init__(self) -> None:
+        self._client = genai.Client(api_key=settings.gemini_api_key)
+
+    def load_inputs(self, session: Session, run_id: uuid.UUID) -> Podcast | None:
+        repo = PodcastRepository(session)
+        return repo.get_by_run_id(run_id)
+
+    async def process(self, inputs: Podcast | None) -> bytes | None:
+        if inputs is None:
+            return None
+
+        prompt = f"{_AUDIO_PREAMBLE}\n\n{inputs.script}"
+        response = await self._client.aio.models.generate_content(
+            model=_TTS_MODEL,
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                response_modalities=["AUDIO"],
+                speech_config=types.SpeechConfig(
+                    multi_speaker_voice_config=types.MultiSpeakerVoiceConfig(
+                        speaker_voice_configs=[
+                            types.SpeakerVoiceConfig(
+                                speaker="Ryan",
+                                voice_config=types.VoiceConfig(
+                                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                        voice_name="Sadachbia",
+                                    )
+                                ),
+                            ),
+                            types.SpeakerVoiceConfig(
+                                speaker="Priya",
+                                voice_config=types.VoiceConfig(
+                                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                        voice_name="Gacrux",
+                                    )
+                                ),
+                            ),
+                        ]
+                    )
+                ),
+            ),
+        )
+
+        pcm_data = response.candidates[0].content.parts[0].inline_data.data
+        return _pcm_to_mp3(pcm_data)
+
+    def persist(
+        self,
+        session: Session,
+        run_id: uuid.UUID,
+        outputs: bytes | None,
+    ) -> int:
+        if outputs is None:
+            return 0
+        output_dir = Path("output")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "podcast.mp3").write_bytes(outputs)
+        return 1
+
+    def print_stats(self, outputs: bytes | None, persist_result: int) -> None:
+        if outputs is None:
+            print("  No podcast script to generate audio from")
+            return
+        size_kb = len(outputs) / 1024
+        print(f"  Output: output/podcast.mp3 ({size_kb:.0f} KB)")
+
+
+def _pcm_to_mp3(pcm_data: bytes) -> bytes:
+    """Convert raw 16-bit 24kHz mono PCM to MP3 via ffmpeg."""
+    proc = subprocess.run(
+        [
+            "ffmpeg", "-y",
+            "-f", "s16le",           # 16-bit signed little-endian PCM
+            "-ar", str(_PCM_SAMPLE_RATE),
+            "-ac", str(_PCM_CHANNELS),
+            "-i", "pipe:0",          # read from stdin
+            "-f", "mp3",
+            "pipe:1",                # write to stdout
+        ],
+        input=pcm_data,
+        capture_output=True,
+        check=True,
+    )
+    return proc.stdout

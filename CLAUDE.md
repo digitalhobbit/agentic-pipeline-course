@@ -55,6 +55,7 @@ Each step reads its own inputs from the database and persists its outputs. Steps
 7. **Visualizer** — AI generates an image prompt and caption for the header image
 8. **ImageGenerator** — AI generates the actual header image from the prompt
 9. **PodcastScript** — AI generates a ~4-minute podcast script as a conversation between two hosts: Ryan (enthusiastic founder/angel) and Priya (dry, analytical ex-consultant, British accent). Writes to `output/podcast_script.txt`
+10. **PodcastAudio** — Calls the Gemini TTS API directly (not via Pydantic AI) to synthesise the script into audio. Uses multi-speaker voice config (Ryan: Sadachbia, Priya: Gacrux). Converts raw PCM output to MP3 via ffmpeg. Writes to `output/podcast.mp3`
 
 ## Development Commands
 
@@ -104,6 +105,7 @@ The `AIModelFactory` in `pipeline/ai_models.py` selects appropriate models for e
 | Visualizer     | `gemini-2.5-pro`             | Creative prompt generation                |
 | ImageGenerator | `gemini-3-pro-image-preview` | Image generation model                    |
 | PodcastScript  | `gemini-2.5-pro`             | Creative dialogue generation              |
+| PodcastAudio   | `gemini-2.5-flash-preview-tts` | TTS — called directly via google-genai SDK, not Pydantic AI |
 
 This keeps development costs low while maintaining quality where it matters.
 

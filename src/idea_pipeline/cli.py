@@ -6,13 +6,13 @@ from idea_pipeline.db.database import get_session
 from idea_pipeline.db.repositories import RunRepository
 from idea_pipeline.pipeline.ideation import DeepDiveStep, SynthesisStep
 from idea_pipeline.pipeline.ingestion import ExtractionStep, FetchStep, TriageStep
-from idea_pipeline.pipeline.podcast import PodcastScriptStep
+from idea_pipeline.pipeline.podcast import PodcastAudioStep, PodcastScriptStep
 from idea_pipeline.pipeline.production import ImageGeneratorStep, VisualizerStep, WriterStep
 
 ALL_STEPS = [
     FetchStep(), TriageStep(), ExtractionStep(), SynthesisStep(),
     DeepDiveStep(), WriterStep(), VisualizerStep(), ImageGeneratorStep(),
-    PodcastScriptStep(),
+    PodcastScriptStep(), PodcastAudioStep(),
 ]
 STEP_KEYS = [step.key for step in ALL_STEPS]
 
