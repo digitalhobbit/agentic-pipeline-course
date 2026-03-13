@@ -1,3 +1,4 @@
+import random
 import uuid
 from pathlib import Path
 
@@ -211,25 +212,68 @@ rather than through text or labels
 The caption should be 5-10 words summarizing what the image depicts.\
 """
 
-    _ARCHETYPE_STYLES = {
-        CandidateArchetype.META_TREND: (
-            "Visual style: dark, techy aesthetic. Use glass morphism effects, "
-            "neon accent colors (cyan, magenta), deep navy or black backgrounds, "
-            "and subtle grid patterns. Think futuristic dashboard or data "
-            "visualization."
-        ),
-        CandidateArchetype.FRICTION_POINT: (
-            "Visual style: industrial, structured look. Use bold geometric "
-            "grids, strong lines, muted earth tones with one accent color "
-            "(orange or yellow), and a sense of mechanical precision. Think "
-            "blueprint or factory floor."
-        ),
-        CandidateArchetype.RABBIT_HOLE: (
-            "Visual style: playful or abstract. Use soft 3D renders, paper "
-            "cutout textures, or illustrated elements. Warm pastel palette "
-            "with unexpected color pops. Think whimsical editorial "
-            "illustration."
-        ),
+    _ARCHETYPE_STYLES: dict[CandidateArchetype, list[str]] = {
+        CandidateArchetype.META_TREND: [
+            # Dark Glassmorphism
+            "Visual style: Dark Glassmorphism. Frosted glass panels layered "
+            "over deep black and navy backgrounds, with neon cyan and violet "
+            "glows bleeding through translucent surfaces. Subtle hexagonal "
+            "grid texture overlaid on the composition. Palette: deep navy, "
+            "black, neon cyan, violet. Mood: cool, luminescent, high-tech "
+            "control room.",
+            # Cosmic Data Nebula
+            "Visual style: Cosmic Data Nebula. Swirling galactic dust clouds "
+            "in indigo and teal rendered as abstract data streams, with "
+            "glowing particle trails forming orbital arcs across a pitch-black "
+            "void background. Palette: indigo, teal, electric white, black. "
+            "Mood: awe-inspiring, infinite, vast.",
+            # Liquid Chrome Currents
+            "Visual style: Liquid Chrome Currents. Flowing mercury-like "
+            "ribbons in silver and electric blue weave through a dark void, "
+            "with high-contrast reflective surfaces and dramatic specular "
+            "highlights. Palette: silver, electric blue, charcoal, white. "
+            "Mood: sleek, kinetic, cutting-edge.",
+        ],
+        CandidateArchetype.FRICTION_POINT: [
+            # Industrial Cyber-Structure
+            "Visual style: Industrial Cyber-Structure. Exposed steel I-beams "
+            "and ductwork overlaid with holographic blueprint wireframes in "
+            "electric blue, lit by harsh directional light casting deep "
+            "angular shadows. Palette: oxidized orange, gunmetal grey, "
+            "electric blue. Mood: tense, engineered, under pressure.",
+            # Mechanical Tension
+            "Visual style: Mechanical Tension. Close-up of interlocked gears "
+            "and ratchet mechanisms under visible strain, set against a "
+            "desaturated charcoal background. A single sharp amber highlight "
+            "traces the exact point of friction. Palette: charcoal, amber, "
+            "dark grey. Mood: mechanical, urgent, about to break.",
+            # Brutalist Neon Contrast
+            "Visual style: Brutalist Neon Contrast. Raw concrete slabs "
+            "arranged in aggressive geometric composition, sliced through by "
+            "jarring neon yellow or red accent lines. High-contrast, stark, "
+            "minimal. Palette: raw concrete grey, neon yellow or red, black. "
+            "Mood: confrontational, uncompromising, blunt.",
+        ],
+        CandidateArchetype.RABBIT_HOLE: [
+            # Soft 3D Claymorphism
+            "Visual style: Soft 3D Claymorphism. Rounded clay-like 3D objects "
+            "in saturated pastels arranged on a softly lit off-white surface, "
+            "with gentle ambient occlusion shadows giving tactile depth. "
+            "Palette: mint, peach, lavender, off-white. Mood: playful, "
+            "tactile, inviting.",
+            # Abstract Paper Cutout
+            "Visual style: Abstract Paper Cutout. Layered hand-cut paper "
+            "shapes creating depth through stacked silhouettes and subtle drop "
+            "shadows, with a single vibrant accent color popping against muted "
+            "tones. Palette: warm cream, terracotta, one vivid accent. Mood: "
+            "handcrafted, intimate, editorial.",
+            # Miniature Diorama
+            "Visual style: Miniature Diorama. Hyper-detailed tilt-shift "
+            "aesthetic depicting a tiny world inside a diorama box, with "
+            "selective focus blur on the edges and warm golden-hour lighting "
+            "illuminating lush micro-scale details. Palette: warm amber, "
+            "forest green, cream. Mood: whimsical, surprising, delightful.",
+        ],
     }
 
     def __init__(self) -> None:
@@ -296,7 +340,9 @@ The caption should be 5-10 words summarizing what the image depicts.\
     def _format_prompt(
         self, candidate: Candidate, business_model: BusinessModel
     ) -> str:
-        style = self._ARCHETYPE_STYLES[candidate.archetype]
+        style = random.choice(self._ARCHETYPE_STYLES[candidate.archetype])
+        style_name = style.split(".")[0].removeprefix("Visual style: ")
+        print(f"  Style:   {style_name}")
         return "\n".join([
             "Create an image prompt and caption for this startup's "
             "newsletter header:\n",
