@@ -10,6 +10,7 @@ from idea_pipeline.core.models import (
     BusinessModel,
     Candidate,
     NewsletterPost,
+    Podcast,
     Run,
     RunStatus,
     TriageDecision,
@@ -232,6 +233,10 @@ class NewsletterPostRepository:
         self.session.refresh(post)
         return post
 
+    def get_by_run_id(self, run_id: uuid.UUID) -> NewsletterPost | None:
+        stmt = select(NewsletterPost).where(NewsletterPost.run_id == run_id)
+        return self.session.exec(stmt).first()
+
 
 class VisualConceptRepository:
     def __init__(self, session: Session) -> None:
@@ -245,4 +250,19 @@ class VisualConceptRepository:
 
     def get_by_run_id(self, run_id: uuid.UUID) -> VisualConcept | None:
         stmt = select(VisualConcept).where(VisualConcept.run_id == run_id)
+        return self.session.exec(stmt).first()
+
+
+class PodcastRepository:
+    def __init__(self, session: Session) -> None:
+        self.session = session
+
+    def create(self, podcast: Podcast) -> Podcast:
+        self.session.add(podcast)
+        self.session.commit()
+        self.session.refresh(podcast)
+        return podcast
+
+    def get_by_run_id(self, run_id: uuid.UUID) -> Podcast | None:
+        stmt = select(Podcast).where(Podcast.run_id == run_id)
         return self.session.exec(stmt).first()

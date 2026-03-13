@@ -54,6 +54,7 @@ Each step reads its own inputs from the database and persists its outputs. Steps
 6. **Writer** — AI generates the final newsletter post as markdown
 7. **Visualizer** — AI generates an image prompt and caption for the header image
 8. **ImageGenerator** — AI generates the actual header image from the prompt
+9. **PodcastScript** — AI generates a ~4-minute podcast script as a conversation between two hosts: Ryan (enthusiastic founder/angel) and Priya (dry, analytical ex-consultant, British accent). Writes to `output/podcast_script.txt`
 
 ## Development Commands
 
@@ -102,6 +103,7 @@ The `AIModelFactory` in `pipeline/ai_models.py` selects appropriate models for e
 | Writer         | `gemini-2.5-pro`             | Long-form content generation              |
 | Visualizer     | `gemini-2.5-pro`             | Creative prompt generation                |
 | ImageGenerator | `gemini-3-pro-image-preview` | Image generation model                    |
+| PodcastScript  | `gemini-2.5-pro`             | Creative dialogue generation              |
 
 This keeps development costs low while maintaining quality where it matters.
 
