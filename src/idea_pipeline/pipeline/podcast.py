@@ -23,6 +23,7 @@ from idea_pipeline.db.repositories import (
 )
 from idea_pipeline.pipeline.ai_models import AIModelFactory
 from idea_pipeline.pipeline.base import PipelineStep
+from idea_pipeline.pipeline.retry import run_with_retry
 
 _TTS_MODEL = "gemini-2.5-flash-preview-tts"
 _PCM_SAMPLE_RATE = 24000
@@ -143,7 +144,7 @@ vetted the idea; the podcast's job is to make it feel exciting and inevitable.\
 
         candidate, business_model, post = inputs
         prompt = self._format_prompt(candidate, business_model, post)
-        result = await self._agent.run(prompt)
+        result = await self.call_agent(self._agent, prompt)
         script = result.output.script
 
         word_count = len(script.split())
@@ -221,34 +222,36 @@ class PodcastAudioStep(PipelineStep):
             return None
 
         prompt = f"{_AUDIO_PREAMBLE}\n\n{inputs.script}"
-        response = await self._client.aio.models.generate_content(
-            model=_TTS_MODEL,
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_modalities=["AUDIO"],
-                speech_config=types.SpeechConfig(
-                    multi_speaker_voice_config=types.MultiSpeakerVoiceConfig(
-                        speaker_voice_configs=[
-                            types.SpeakerVoiceConfig(
-                                speaker="Ryan",
-                                voice_config=types.VoiceConfig(
-                                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                                        voice_name="Sadachbia",
-                                    )
-                                ),
+        config = types.GenerateContentConfig(
+            response_modalities=["AUDIO"],
+            speech_config=types.SpeechConfig(
+                multi_speaker_voice_config=types.MultiSpeakerVoiceConfig(
+                    speaker_voice_configs=[
+                        types.SpeakerVoiceConfig(
+                            speaker="Ryan",
+                            voice_config=types.VoiceConfig(
+                                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                    voice_name="Sadachbia",
+                                )
                             ),
-                            types.SpeakerVoiceConfig(
-                                speaker="Priya",
-                                voice_config=types.VoiceConfig(
-                                    prebuilt_voice_config=types.PrebuiltVoiceConfig(
-                                        voice_name="Gacrux",
-                                    )
-                                ),
+                        ),
+                        types.SpeakerVoiceConfig(
+                            speaker="Priya",
+                            voice_config=types.VoiceConfig(
+                                prebuilt_voice_config=types.PrebuiltVoiceConfig(
+                                    voice_name="Gacrux",
+                                )
                             ),
-                        ]
-                    )
-                ),
+                        ),
+                    ]
+                )
             ),
+        )
+        response = await run_with_retry(
+            lambda: self._client.aio.models.generate_content(
+                model=_TTS_MODEL, contents=prompt, config=config
+            ),
+            context=f"{self.key} agent call",
         )
 
         pcm_data = response.candidates[0].content.parts[0].inline_data.data
