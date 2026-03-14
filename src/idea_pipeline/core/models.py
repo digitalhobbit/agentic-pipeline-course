@@ -356,3 +356,30 @@ class VisualConcept(VisualConceptBase, table=True):
         default_factory=lambda: datetime.now(timezone.utc),
         description="Timestamp when the visual concept was created",
     )
+
+
+class PodcastBase(SQLModel):
+    script: str = Field(
+        description="Full podcast script with Ryan:/Priya: speaker labels, ~550 words for ~4 minutes of audio",
+    )
+    estimated_duration_seconds: int = Field(
+        description="Estimated audio duration in seconds, calculated at ~135 words per minute",
+    )
+
+
+class Podcast(PodcastBase, table=True):
+    __tablename__ = "podcasts"
+
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+        description="Unique identifier for the podcast",
+    )
+    run_id: uuid.UUID = Field(
+        foreign_key="runs.id",
+        description="ID of the pipeline run that generated this podcast",
+    )
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc),
+        description="Timestamp when the podcast was created",
+    )
