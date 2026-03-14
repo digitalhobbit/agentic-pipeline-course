@@ -117,7 +117,7 @@ Start directly with ## The Signal.\
 
         candidate, business_model, articles = inputs
         prompt = self._format_prompt(candidate, business_model, articles)
-        result = await self._agent.run(prompt)
+        result = await self.call_agent(self._agent, prompt)
         output = result.output
 
         return NewsletterPost(
@@ -307,7 +307,7 @@ The caption should be 5-10 words summarizing what the image depicts.\
 
         candidate, business_model = inputs
         prompt = self._format_prompt(candidate, business_model)
-        result = await self._agent.run(prompt)
+        result = await self.call_agent(self._agent, prompt)
         output = result.output
 
         return VisualConcept(
@@ -383,7 +383,7 @@ class ImageGeneratorStep(PipelineStep):
             "Absolutely no text, no words, no letters, no numbers, no titles, "
             "no labels, no captions, no typography anywhere in the image."
         )
-        result = await self._agent.run(prompt)
+        result = await self.call_agent(self._agent, prompt)
         return result.output.data
 
     def persist(

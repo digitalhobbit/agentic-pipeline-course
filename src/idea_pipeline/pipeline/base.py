@@ -37,6 +37,13 @@ class PipelineStep(ABC):
         if self.verbose:
             print(f"  [{self.key}] {message}")
 
+    async def call_agent(self, agent: Any, prompt: str) -> Any:
+        from idea_pipeline.pipeline.retry import run_with_retry
+
+        return await run_with_retry(
+            lambda: agent.run(prompt), context=f"{self.key} agent call"
+        )
+
     async def run(self, run_id: uuid.UUID, session: Session) -> None:
         print(f"--- Step: {self.key} ---")
         inputs = self.load_inputs(session, run_id)
@@ -95,7 +102,7 @@ class BatchStep(PipelineStep, Generic[InputT, IndexedT, OutputT]):
             self.log(f"Batch {batch_num}/{total_batches}: {len(batch)} items")
 
             prompt = self._format_batch_prompt(index_to_item)
-            result = await self._agent.run(prompt)
+            result = await self.call_agent(self._agent, prompt)
 
             outputs: list[OutputT] = []
             for indexed in self._extract_indexed_results(result.output):

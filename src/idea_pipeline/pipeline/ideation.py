@@ -91,7 +91,7 @@ developer, clarity of the pain point, and timing (why now).\
             return []
 
         prompt = self._format_prompt(inputs)
-        result = await self._agent.run(prompt)
+        result = await self.call_agent(self._agent, prompt)
 
         candidates: list[Candidate] = []
         for c in result.output.candidates:
@@ -265,7 +265,7 @@ well-documented technology over cutting-edge tools.\
 
         candidate, articles = inputs
         prompt = self._format_prompt(candidate, articles)
-        result = await self._agent.run(prompt)
+        result = await self.call_agent(self._agent, prompt)
         output = result.output
 
         return BusinessModel(
