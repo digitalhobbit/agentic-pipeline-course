@@ -11,7 +11,7 @@ The architecture diagram and tech stack are included in the course materials.
 ## Prerequisites
 
 - **OS:** macOS, Linux, or WSL2 on Windows
-- **Python:** 3.12+
+- **Python:** 3.13+
 - **uv:** Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for dependency management
 - **Agentic Coding Tool:** Claude Code ([install instructions](https://code.claude.com/docs/en/getting-started)), Cursor, Codex, Windsurf, AntiGravity, or similar
 - **Gemini API Key:** Get a free key at [Google AI Studio](https://aistudio.google.com/api-keys). Note: the free tier has rate limits; for sustained use, set up billing in Google Cloud Console.

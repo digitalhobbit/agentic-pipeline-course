@@ -15,7 +15,7 @@ The pipeline is designed to run daily, processing fresh news into actionable sta
 
 ## Tech Stack
 
-- **Python 3.12+** with **uv** for dependency management
+- **Python 3.13+** with **uv** for dependency management
 - **Pydantic AI** for AI agent orchestration
 - **SQLModel** for data models (combines Pydantic + SQLAlchemy)
 - **SQLite** for local database storage
