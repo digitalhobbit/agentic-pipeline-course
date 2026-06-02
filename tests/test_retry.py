@@ -3,11 +3,13 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import httpx
 import pytest
+from google.genai import errors as genai_errors
+from pydantic_ai.exceptions import ModelHTTPError
 
 from idea_pipeline.pipeline.retry import is_retryable, run_with_retry
 
 
-# --- is_retryable ---
+# --- is_retryable: raw httpx errors ---
 
 
 def test_is_retryable_timeout():
@@ -40,6 +42,47 @@ def test_is_retryable_http_400():
 
 def test_is_retryable_value_error():
     assert is_retryable(ValueError("some error")) is False
+
+
+# --- is_retryable: Pydantic AI errors (what agent calls actually raise) ---
+
+
+def _model_http_error(status_code: int) -> ModelHTTPError:
+    return ModelHTTPError(status_code=status_code, model_name="gemini-2.5-pro", body=None)
+
+
+def test_is_retryable_model_http_error_429():
+    assert is_retryable(_model_http_error(429)) is True
+
+
+def test_is_retryable_model_http_error_500():
+    assert is_retryable(_model_http_error(500)) is True
+
+
+def test_is_retryable_model_http_error_503():
+    assert is_retryable(_model_http_error(503)) is True
+
+
+def test_is_retryable_model_http_error_400():
+    assert is_retryable(_model_http_error(400)) is False
+
+
+# --- is_retryable: google-genai errors (what the direct TTS call raises) ---
+
+
+def test_is_retryable_genai_client_error_429():
+    err = genai_errors.ClientError(429, {"error": {"message": "rate limited", "code": 429}})
+    assert is_retryable(err) is True
+
+
+def test_is_retryable_genai_server_error_503():
+    err = genai_errors.ServerError(503, {"error": {"message": "unavailable", "code": 503}})
+    assert is_retryable(err) is True
+
+
+def test_is_retryable_genai_client_error_400():
+    err = genai_errors.ClientError(400, {"error": {"message": "bad request", "code": 400}})
+    assert is_retryable(err) is False
 
 
 # --- run_with_retry ---
@@ -87,6 +130,16 @@ async def test_run_with_retry_http_429_is_retried(mock_sleep):
     response = MagicMock()
     response.status_code = 429
     err = httpx.HTTPStatusError("rate limited", request=MagicMock(), response=response)
+    coro_fn = AsyncMock(side_effect=[err, "ok"])
+    result = await run_with_retry(coro_fn)
+    assert result == "ok"
+    assert coro_fn.call_count == 2
+
+
+@pytest.mark.anyio
+@patch("asyncio.sleep", new_callable=AsyncMock)
+async def test_run_with_retry_model_http_error_429_is_retried(mock_sleep):
+    err = _model_http_error(429)
     coro_fn = AsyncMock(side_effect=[err, "ok"])
     result = await run_with_retry(coro_fn)
     assert result == "ok"

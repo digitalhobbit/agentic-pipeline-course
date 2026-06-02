@@ -5,6 +5,8 @@ from collections.abc import Callable, Coroutine
 from typing import Any, TypeVar
 
 import httpx
+from google.genai import errors as genai_errors
+from pydantic_ai.exceptions import ModelHTTPError
 
 logger = logging.getLogger(__name__)
 
@@ -17,11 +19,29 @@ _MAX_DELAY = 120.0
 _JITTER_FACTOR = 0.25
 
 
+def _status_code(exc: BaseException) -> int | None:
+    """Best-effort extraction of an HTTP status code from the exception types
+    our SDKs actually raise.
+
+    Each layer raises its own exception type rather than a raw
+    ``httpx.HTTPStatusError``: Pydantic AI raises ``ModelHTTPError`` and the
+    google-genai SDK (used directly for TTS) raises ``APIError`` subclasses.
+    """
+    if isinstance(exc, httpx.HTTPStatusError):
+        return exc.response.status_code
+    if isinstance(exc, ModelHTTPError):
+        return exc.status_code
+    if isinstance(exc, genai_errors.APIError):
+        return exc.code
+    return None
+
+
 def is_retryable(exc: BaseException) -> bool:
     if isinstance(exc, asyncio.TimeoutError):
         return True
-    if isinstance(exc, httpx.HTTPStatusError):
-        return exc.response.status_code == 429 or exc.response.status_code >= 500
+    status_code = _status_code(exc)
+    if status_code is not None:
+        return status_code == 429 or status_code >= 500
     return False
 
 
