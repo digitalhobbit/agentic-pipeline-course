@@ -90,3 +90,9 @@ This repo is the finished reference. The course walks through building it from a
 **Tech stack**
 
 ![Tech Stack](TechStack.png)
+
+---
+
+## License
+
+Licensed under the MIT License — see [LICENSE](LICENSE) for details.
