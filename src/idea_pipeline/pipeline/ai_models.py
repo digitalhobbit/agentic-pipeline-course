@@ -5,11 +5,11 @@ from idea_pipeline.core.settings import settings
 
 _STEP_MODELS: dict[str, str] = {
     "triage": "gemini-2.5-flash-lite",
-    "extraction": "gemini-2.5-flash",
-    "image_generator": "gemini-3-pro-image-preview",
+    "extraction": "gemini-3.5-flash-lite",
+    "image_generator": "gemini-3-pro-image",
 }
 
-_DEFAULT_MODEL = "gemini-2.5-pro"
+_DEFAULT_MODEL = "gemini-3.6-flash"
 
 
 class AIModelFactory:

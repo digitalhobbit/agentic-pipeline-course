@@ -2,7 +2,7 @@
 
 **Last Updated:**
 
- July 16, 2026
+ July 27, 2026
 
 The AI space evolves quickly. While the course was recorded with specific model and tool versions, the principles are deliberately tool agnostic and still apply. This lesson holds the current model version recommendations. These supersede the guidance in the `CLAUDE.md` file.
 
@@ -14,10 +14,10 @@ That said, I suggest the following substitutions:
 
 * **Extraction:**
   * Old: `gemini-2.5-flash`
-  * New: `gemini-3.1-flash-lite`
+  * New: `gemini-3.5-flash-lite`
 * **Synthesis, Deep Dive, Writer, etc.:**
   * Old: `gemini-2.5-pro`
-  * New: `gemini-3.5-flash`
+  * New: `gemini-3.6-flash`
 * **Embedding:**
   * Old: `gemini-embedding-001`
   * New: `gemini-embedding-2`
@@ -32,6 +32,6 @@ As stated in the video, I generally avoid preview models, as these can have lowe
 
 ## Claude Code
 
-The course videos mainly use Claude Code with Opus 4.6. The most recent Opus version is 4.8 (released on May 28, 2026). The key difference between Opus 4.6 and Opus 4.7/4.8 is that **Anthropic recommends using a higher effort level ("High" or "xHigh" instead of "Medium") with the newer models**. I use "xHigh" most of the time.
+The course videos mainly use Claude Code with Opus 4.6. The most recent Opus version is 5.0 (released on July 24, 2026). The key difference between Opus 4.6 and Opus 4.7/4.8/5.0 is that **Anthropic recommends using a higher effort level ("High" or "xHigh" instead of "Medium") with the newer models**. I use "xHigh" most of the time.
 
 Also note that Claude Code itself (independent of the model) is evolving rapidly. Anthropic frequently tests new features and UI changes, so the UI may look slightly different than in the videos.
