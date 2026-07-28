@@ -30,6 +30,21 @@ As you see, lower-tier models in a newer generation often perform better than hi
 
 As stated in the video, I generally avoid preview models, as these can have lower availability and rate limits.
 
+## Local Models
+
+The repo can also run the text steps against local models served by [LM Studio](https://lmstudio.ai/). This is experimental and the quality is well below the Gemini models, but it lets you run the pipeline without API costs. Use `uv run idea-pipeline run --provider lmstudio`, or set `LLM_PROVIDER=lmstudio` in your `.env`.
+
+The models are configured in `src/idea_pipeline/pipeline/ai_models.py`:
+
+* **Triage, Extraction:** `google/gemma-4-e4b`
+* **Everything else:** `google/gemma-4-12b-qat`
+
+Image generation, text to speech, and embeddings have no local equivalent yet, so those steps always use Gemini. You still need a `GEMINI_API_KEY`.
+
+**Important:** in LM Studio, lower the sampling settings for `gemma-4-12b-qat` to **temperature 0.35** and **Top P Sampling 0.9**. The defaults (1.0 and 0.95) are too loose. Pydantic AI has LM Studio constrain the output to a JSON schema, and that schema lets the model end a text field at any point. At the default temperature it eventually picks a closing quote mid-sentence, which cuts the newsletter short after two or three sections. The result still parses as valid JSON, so nothing in the pipeline flags it as a failure.
+
+Depending on your hardware, you may want to experiment with different local models, such as Gemma 4 31B or Qwen 3.6.
+
 ## Claude Code
 
 The course videos mainly use Claude Code with Opus 4.6. The most recent Opus version is 5.0 (released on July 24, 2026). The key difference between Opus 4.6 and Opus 4.7/4.8/5.0 is that **Anthropic recommends using a higher effort level ("High" or "xHigh" instead of "Medium") with the newer models**. I use "xHigh" most of the time.

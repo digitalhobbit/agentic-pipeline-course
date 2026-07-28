@@ -212,9 +212,6 @@ class CandidateBase(SQLModel):
     solution_overview: str = Field(
         description="How the product works at a high level",
     )
-    supporting_article_ids: list[str] = Field(
-        description="List of article UUIDs that support this candidate idea",
-    )
 
 
 class Candidate(CandidateBase, table=True):

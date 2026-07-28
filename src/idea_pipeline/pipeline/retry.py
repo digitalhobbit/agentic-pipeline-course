@@ -8,11 +8,12 @@ import httpx
 from google.genai import errors as genai_errors
 from pydantic_ai.exceptions import ModelHTTPError
 
+from idea_pipeline.pipeline.ai_models import provider_config
+
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
 
-_TIMEOUT_SECONDS = 300  # 5 minutes per attempt
 _MAX_RETRIES = 4
 _BASE_DELAY = 5.0
 _MAX_DELAY = 120.0
@@ -51,10 +52,11 @@ async def run_with_retry(
     context: str = "agent call",
 ) -> T:
     last_exc: BaseException | None = None
+    timeout_seconds = provider_config().timeout_seconds
 
     for attempt in range(_MAX_RETRIES + 1):
         try:
-            return await asyncio.wait_for(coro_fn(), timeout=_TIMEOUT_SECONDS)
+            return await asyncio.wait_for(coro_fn(), timeout=timeout_seconds)
         except BaseException as exc:
             if not is_retryable(exc):
                 raise

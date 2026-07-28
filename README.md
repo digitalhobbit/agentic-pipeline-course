@@ -56,7 +56,7 @@ uv run idea-pipeline run
 
 Generated output lands in `output/` (newsletter markdown, header image, podcast script + MP3). The SQLite database and vector store live in `data/`.
 
-> **Note:** AI models evolve quickly. [RECOMMENDATIONS.md](RECOMMENDATIONS.md) lists the Gemini models I currently recommend. They supersede the choices in this repo and in the course videos.
+> **Note:** AI models evolve quickly. [RECOMMENDATIONS.md](RECOMMENDATIONS.md) lists the Gemini models I currently recommend, and they supersede the choices in this repo and in the course videos. It also covers running the text steps on local models with LM Studio, which is experimental.
 
 ### Useful commands
 
@@ -90,7 +90,7 @@ The [starter_files/](starter_files/) folder contains everything you need to foll
 
 ### Course companion materials
 
-- **[RECOMMENDATIONS.md](RECOMMENDATIONS.md)**: up-to-date AI model recommendations and current guidance on Claude Code. Models have evolved since the videos were recorded, so this file supersedes the model choices shown in the course and in [CLAUDE.md](CLAUDE.md).
+- **[RECOMMENDATIONS.md](RECOMMENDATIONS.md)**: up-to-date AI model recommendations, notes on running local models with LM Studio, and current guidance on Claude Code. Models have evolved since the videos were recorded, so this file supersedes the model choices shown in the course and in [CLAUDE.md](CLAUDE.md).
 - **[diagrams/](diagrams/)**: all the diagrams that appear in the course, usually prefixed by module name (e.g. `Extraction - ...`).
 - **[CLAUDE.md](CLAUDE.md)**: the full project conventions that guide the coding agent.
 

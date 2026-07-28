@@ -66,6 +66,9 @@ uv sync
 # Run the full pipeline
 uv run idea-pipeline run
 
+# Run the full pipeline against local models served by LM Studio
+uv run idea-pipeline run --provider lmstudio
+
 # Show help and available commands
 uv run idea-pipeline --help
 
@@ -109,6 +112,24 @@ The `AIModelFactory` in `pipeline/ai_models.py` selects appropriate models for e
 
 This keeps development costs low while maintaining quality where it matters.
 
+### LLM Providers
+
+The pipeline can run its text steps against Gemini (default) or against local models served by LM Studio. Pick one with `run --provider {google,lmstudio}`, or set `LLM_PROVIDER` in `.env`. LM Studio support is experimental.
+
+`pipeline/ai_models.py` holds one `ProviderConfig` per provider. Besides the model names, it carries the workload limits that have to differ between a hosted API and a local model: per-attempt timeout, batch concurrency, triage and extraction batch sizes, and the synthesis insight cap. Local models are slower and run with much smaller context windows, so those numbers are lower for LM Studio. Change limits there, not in the steps.
+
+LM Studio models:
+
+| Step               | Model                    |
+|--------------------|--------------------------|
+| Triage, Extraction | `google/gemma-4-e4b`     |
+| Everything else    | `google/gemma-4-12b-qat` |
+
+Two things to know about the LM Studio path:
+
+- It talks to LM Studio's OpenAI-compatible endpoint via `OpenAIChatModel` + `OpenAIProvider`. The model profile forces `native` structured output, so LM Studio constrains generation to the JSON schema instead of asking a small local model to produce a tool call.
+- Image generation, TTS and embeddings have no local equivalent and always use Gemini, so a `GEMINI_API_KEY` is still required. Steps that must stay on Gemini are listed in `GOOGLE_ONLY_STEPS`.
+
 ## Key Conventions
 
 ### Data Models
@@ -124,6 +145,10 @@ This keeps development costs low while maintaining quality where it matters.
 - Each step is a class inheriting from `PipelineStep`
 - Steps are stateless: fetch input from DB, process, persist output to DB
 - Steps are responsible for querying their own inputs (e.g., rolling windows)
+- Never ask an agent to echo back a UUID. Label the items in the prompt with small integers and map those back to real IDs in the step, the way `SynthesisStep._resolve_article_ids` and `BatchStep` do. Small local models truncate UUIDs — Gemma copies only the first dash-delimited group — and a bad ID poisons every step downstream
+- Do side effects in `persist`, not `load_inputs`. A step that claims a row before its agent call burns that row when the call fails; `DeepDiveStep` marks its candidate selected only after the deep dive returns
+- IDs written by an agent in an earlier run can be malformed, so parse them with `self.parse_article_ids(...)`, which skips and reports bad values instead of raising
+- Always call agents through `self.call_agent(...)`, never `agent.run(...)` directly. It applies the retry policy and checks the response's `finish_reason`, warning when the model stopped at a token limit rather than finishing. Truncation is otherwise silent — the step persists the partial output and prints its usual success line. Run with `-v` to see `finish_reason` and output token counts for every call
 
 ### AI Agents
 
@@ -183,6 +208,13 @@ Required in `.env`:
 ```
 NEWSAPI_API_KEY=your_key_here
 GEMINI_API_KEY=your_key_here
+```
+
+Optional, for the LM Studio provider:
+```
+LLM_PROVIDER=lmstudio                        # default: google
+LMSTUDIO_BASE_URL=http://localhost:1234/v1   # LM Studio's OpenAI-compatible endpoint
+LMSTUDIO_API_KEY=lm-studio                   # any non-empty placeholder
 ```
 
 ## Reminders for Every Change

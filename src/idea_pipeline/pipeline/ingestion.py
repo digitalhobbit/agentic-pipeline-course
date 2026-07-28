@@ -19,7 +19,7 @@ from idea_pipeline.db.repositories import (
     ArticleRepository,
     TriageDecisionRepository,
 )
-from idea_pipeline.pipeline.ai_models import AIModelFactory
+from idea_pipeline.pipeline.ai_models import AIModelFactory, provider_config
 from idea_pipeline.pipeline.base import BatchStep, PipelineStep
 
 
@@ -109,7 +109,7 @@ referencing articles by their index number.\
 
     @property
     def batch_size(self) -> int:
-        return 40
+        return provider_config().triage_batch_size
 
     def __init__(self) -> None:
         factory = AIModelFactory()
@@ -222,7 +222,7 @@ article, referencing articles by their index number.\
 
     @property
     def batch_size(self) -> int:
-        return 10
+        return provider_config().extraction_batch_size
 
     def __init__(self) -> None:
         factory = AIModelFactory()

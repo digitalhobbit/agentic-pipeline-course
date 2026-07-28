@@ -104,7 +104,7 @@ Start directly with ## The Signal.\
         if candidate is None:
             return None
 
-        article_ids = [uuid.UUID(aid) for aid in candidate.supporting_article_ids]
+        article_ids = self.parse_article_ids(candidate.supporting_article_ids)
         article_repo = ArticleRepository(session)
         articles = article_repo.get_by_ids(article_ids)
         return candidate, business_model, articles

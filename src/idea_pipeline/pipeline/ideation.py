@@ -24,12 +24,28 @@ from idea_pipeline.db.repositories import (
     CandidateRepository,
     RunRepository,
 )
-from idea_pipeline.pipeline.ai_models import AIModelFactory
+from idea_pipeline.pipeline.ai_models import AIModelFactory, provider_config
 from idea_pipeline.pipeline.base import PipelineStep
 from idea_pipeline.pipeline.selection import (
     print_selection_ranking,
     select_best_candidate,
 )
+
+
+class _SynthesisCandidate(CandidateBase):
+    """A candidate as the agent writes it, referencing articles by number.
+
+    Agents are unreliable at transcribing 36-character UUIDs — small local
+    models tend to copy only the first dash-delimited group — so the prompt
+    labels articles with short indices and the step maps them back to real IDs.
+    """
+
+    supporting_article_indices: list[int] = Field(
+        description=(
+            "Numbers of the articles that support this candidate, taken from "
+            "the bracketed labels in the input"
+        )
+    )
 
 
 class SynthesisStep(PipelineStep):
@@ -55,15 +71,15 @@ extensions, or data services. No physical goods, manufacturing, hardware, or \
 inventory-based businesses.
 - **Solo-developer scope**: Each idea must be buildable by a single developer \
 with AI assistance in 2-4 weeks for an MVP.
-- **supporting_article_ids**: Each candidate MUST reference actual article IDs \
-from the input that support the idea. Use the article IDs provided — do not \
-invent IDs.
+- **supporting_article_indices**: Each candidate MUST reference the articles \
+that support the idea, using the bracketed numbers shown in the input (e.g. \
+`[7]` becomes `7`). Only use numbers that appear in the input.
 - **Score**: Rate each idea 0-100 based on market size, feasibility for a solo \
 developer, clarity of the pain point, and timing (why now).\
 """
 
     class _SynthesisResult(BaseModel):
-        candidates: list[CandidateBase] = Field(
+        candidates: list[_SynthesisCandidate] = Field(
             description="Exactly 3 startup candidates, one per archetype"
         )
 
@@ -75,8 +91,6 @@ developer, clarity of the pain point, and timing (why now).\
             output_type=SynthesisStep._SynthesisResult,
         )
 
-    _MAX_INSIGHTS = 1000
-
     def load_inputs(
         self, session: Session, run_id: uuid.UUID
     ) -> list[ArticleInsight]:
@@ -84,7 +98,9 @@ developer, clarity of the pain point, and timing (why now).\
             hour=0, minute=0, second=0, microsecond=0
         ) - timedelta(days=1)
         repo = ArticleInsightRepository(session)
-        return repo.get_insights_since(cutoff, limit=self._MAX_INSIGHTS)
+        return repo.get_insights_since(
+            cutoff, limit=provider_config().max_synthesis_insights
+        )
 
     async def process(self, inputs: list[ArticleInsight]) -> list[Candidate]:
         if not inputs:
@@ -105,7 +121,9 @@ developer, clarity of the pain point, and timing (why now).\
                     target_customer=c.target_customer,
                     problem_to_solve=c.problem_to_solve,
                     solution_overview=c.solution_overview,
-                    supporting_article_ids=c.supporting_article_ids,
+                    supporting_article_ids=self._resolve_article_ids(
+                        c.supporting_article_indices, inputs
+                    ),
                 )
             )
 
@@ -138,24 +156,50 @@ developer, clarity of the pain point, and timing (why now).\
         for c in outputs:
             print(f"    [{c.archetype.value}] {c.theme} (score: {c.score})")
 
+    def _resolve_article_ids(
+        self, indices: list[int], insights: list[ArticleInsight]
+    ) -> list[str]:
+        """Map the agent's article numbers back to real article IDs.
+
+        Several insights can share an article, so the result is de-duplicated.
+        Numbers outside the prompt's range are reported and dropped.
+        """
+        article_ids: list[str] = []
+        out_of_range: list[int] = []
+        for index in indices:
+            if not 0 <= index < len(insights):
+                out_of_range.append(index)
+                continue
+            article_id = str(insights[index].article_id)
+            if article_id not in article_ids:
+                article_ids.append(article_id)
+        if out_of_range:
+            print(
+                f"  Ignored {len(out_of_range)} out-of-range article "
+                f"reference(s): {out_of_range}"
+            )
+        return article_ids
+
     def _format_prompt(self, insights: list[ArticleInsight]) -> str:
         lines = [
             "Generate 3 startup candidates (one META_TREND, one FRICTION_POINT, "
-            "one RABBIT_HOLE) from these business insights:\n"
+            "one RABBIT_HOLE) from these business insights.\n",
+            "Each article below is labelled with a number in brackets. Cite "
+            "those numbers in supporting_article_indices.\n",
         ]
-        for insight in insights:
-            lines.append(f"Article ID: {insight.article_id}")
+        for index, insight in enumerate(insights):
+            lines.append(f"Article [{index}]")
             if insight.business_signals:
                 for signal in insight.business_signals:
                     if isinstance(signal, dict):
                         lines.append(
-                            f"  Signal [{signal.get('signal_type', '')}]: "
+                            f"  Signal ({signal.get('signal_type', '')}): "
                             f"{signal.get('headline', '')} — "
                             f"{signal.get('description', '')}"
                         )
                     else:
                         lines.append(
-                            f"  Signal [{signal.signal_type}]: "
+                            f"  Signal ({signal.signal_type}): "
                             f"{signal.headline} — {signal.description}"
                         )
             if insight.market_facts:
@@ -243,16 +287,7 @@ well-documented technology over cutting-edge tools.\
         print_selection_ranking(scored)
         candidate = winner.candidate
 
-        candidate_repo.mark_selected(candidate.id)
-
-        run_repo = RunRepository(session)
-        run = run_repo.get_by_id(run_id)
-        if run is not None:
-            run.selected_candidate_id = candidate.id
-            session.add(run)
-            session.commit()
-
-        article_ids = [uuid.UUID(aid) for aid in candidate.supporting_article_ids]
+        article_ids = self.parse_article_ids(candidate.supporting_article_ids)
         article_repo = ArticleRepository(session)
         articles = article_repo.get_by_ids(article_ids)
         return candidate, articles
@@ -287,6 +322,20 @@ well-documented technology over cutting-edge tools.\
     ) -> int:
         if outputs is None:
             return 0
+
+        # Claiming the candidate only once the deep dive has produced something
+        # keeps a failed agent call from burning it: the next run re-ranks the
+        # same pool instead of silently falling through to the runner-up.
+        candidate_repo = CandidateRepository(session)
+        candidate_repo.mark_selected(outputs.candidate_id)
+
+        run_repo = RunRepository(session)
+        run = run_repo.get_by_id(run_id)
+        if run is not None:
+            run.selected_candidate_id = outputs.candidate_id
+            session.add(run)
+            session.commit()
+
         outputs.run_id = run_id
         repo = BusinessModelRepository(session)
         repo.create(outputs)
